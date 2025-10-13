@@ -1,0 +1,161 @@
+.registration-container {
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+  background-color: #f0f2f5;
+}
+
+.registration-form-card {
+  width: 100%;
+  max-width: 1200px;
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.registration-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.registration-header h1 {
+  color: #1c1e21;
+}
+
+.registration-header p {
+  color: #606770;
+}
+
+fieldset {
+  border: 1px solid #dddfe2;
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+legend {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #0056b3;
+  padding: 0 8px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 6px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #dddfe2;
+  border-radius: 6px;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+
+.checkbox-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.checkbox-group input[type="checkbox"] {
+  width: auto;
+}
+
+.checkbox-group label {
+  margin-bottom: 0;
+}
+
+.dynamic-list-item,
+.dynamic-list-item-column {
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dynamic-list-item-column textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.add-btn,
+.remove-btn {
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  width: fit-content;
+}
+
+.add-btn {
+  background-color: #e7f3ff;
+  color: #0056b3;
+  border-color: #0056b3;
+}
+
+.add-btn:hover {
+  border-color: #646cff;
+}
+
+.remove-btn {
+  background-color: #fde0e0;
+  color: #c00;
+  border-color: #c00;
+}
+
+.submit-btn {
+  width: 100%;
+  padding: 12px;
+  background-color: #0056b3;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+@media (min-width: 768px) {
+  .registration-form-card {
+    padding: 40px;
+    width: 100%;
+  }
+
+  fieldset {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 24px;
+  }
+
+  legend,
+  .submit-btn {
+    grid-column: 1 / -1;
+  }
+
+  .form-group.full-width {
+    grid-column: 1 / -1;
+  }
+
+  .dynamic-list-item {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .dynamic-list-item input,
+  .dynamic-list-item select {
+    flex: 1;
+  }
+}
