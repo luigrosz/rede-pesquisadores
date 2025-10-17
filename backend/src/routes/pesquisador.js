@@ -5,10 +5,18 @@ import bcrypt from 'bcrypt';
 const router = express.Router();
 const salt = 10;
 
+const estadosBrasileiros = [
+  'Acre', 'Alagoas', 'Amapá', 'Amazonas', 'Bahia', 'Ceará', 'Distrito Federal',
+  'Espírito Santo', 'Goiás', 'Maranhão', 'Mato Grosso', 'Mato Grosso do Sul',
+  'Minas Gerais', 'Pará', 'Paraíba', 'Paraná', 'Pernambuco', 'Piauí',
+  'Rio de Janeiro', 'Rio Grande do Norte', 'Rio Grande do Sul', 'Rondônia',
+  'Roraima', 'Santa Catarina', 'São Paulo', 'Sergipe', 'Tocantins'
+];
+
 async function findOrCreateLocalidade(client, { nome_cidade, nome_estado }) {
   const findQuery = `
     SELECT id_localidade FROM "localidade"
-    WHERE nome_cidade ILIKE $1 AND nome_estado ILIKE $2;
+    WHERE unaccent(nome_cidade) ILIKE unaccent($1) AND unaccent(nome_estado) ILIKE unaccent($2);
   `;
   const findResult = await client.query(findQuery, [nome_cidade, nome_estado]);
 
@@ -78,6 +86,103 @@ router.get('/', async (req, res) => {
   }
 });
 
+router.get('/pesquisar', async (req, res) => {
+  try {
+    const {
+      nome,
+      estado,
+      area,
+      sociedade,
+      area_doutorado,
+      programa_de_pos,
+      disciplina,
+      pesquisador_pq,
+      sbfte,
+      equipamento
+    } = req.query;
+
+    let query = `
+      SELECT DISTINCT p.id_pesquisador, p.nome, p.link_lattes, p.email, p.celular,
+             p.pagina_institucional, p.pq, p.is_admin, p.editor_revista,
+             p.laboratorio, p.sbfte, p.is_enabled,
+             l.nome_cidade, l.nome_estado,
+             ad.titulo AS area_doutorado_titulo
+      FROM "pesquisador" p
+      LEFT JOIN "localidade" l ON p.localidade = l.id_localidade
+      LEFT JOIN "area_doutorado" ad ON p.area_doutorado = ad.id_doutorado
+    `;
+
+    const conditions = [];
+    const params = [];
+    let paramIndex = 1;
+
+    if (area) {
+      query += ` LEFT JOIN "area_de_pesquisa" ap ON p.id_pesquisador = ap.id_pesquisador`;
+    }
+    if (sociedade) {
+      query += ` LEFT JOIN "org_sociedades" os ON p.id_pesquisador = os.id_pesquisador`;
+    }
+    if (programa_de_pos) {
+      query += ` LEFT JOIN "pos_graduacao" pg ON p.id_pesquisador = pg.id_pesquisador`;
+    }
+    if (disciplina) {
+      query += ` LEFT JOIN "disciplinas" d ON p.id_pesquisador = d.id_pesquisador`;
+    }
+
+    if (nome) {
+      conditions.push(`unaccent(p.nome) ILIKE unaccent($${paramIndex++})`);
+      params.push(`%${nome}%`);
+    }
+    if (estado) {
+      conditions.push(`unaccent(l.nome_estado) ILIKE unaccent($${paramIndex++})`);
+      params.push(`%${estado}%`);
+    }
+    if (area) {
+      conditions.push(`unaccent(ap.descricao) ILIKE unaccent($${paramIndex++})`);
+      params.push(`%${area}%`);
+    }
+    if (sociedade) {
+      conditions.push(`unaccent(os.nome) ILIKE unaccent($${paramIndex++})`);
+      params.push(`%${sociedade}%`);
+    }
+    if (area_doutorado) {
+      conditions.push(`unaccent(ad.titulo) ILIKE unaccent($${paramIndex++})`);
+      params.push(`%${area_doutorado}%`);
+    }
+    if (programa_de_pos) {
+      conditions.push(`unaccent(pg.titulo) ILIKE unaccent($${paramIndex++})`);
+      params.push(`%${programa_de_pos}%`);
+    }
+    if (disciplina) {
+      conditions.push(`unaccent(d.descricao) ILIKE unaccent($${paramIndex++})`);
+      params.push(`%${disciplina}%`);
+    }
+    if (pesquisador_pq !== undefined) {
+      conditions.push(`p.pq = $${paramIndex++}`);
+      params.push(pesquisador_pq === 'true');
+    }
+    if (sbfte !== undefined) {
+      conditions.push(`p.sbfte = $${paramIndex++}`);
+      params.push(sbfte === 'true');
+    }
+    if (equipamento) {
+      conditions.push(`unaccent(p.laboratorio) ILIKE unaccent($${paramIndex++})`);
+      params.push(`%${equipamento}%`);
+    }
+
+    if (conditions.length > 0) {
+      query += ` WHERE ` + conditions.join(' AND ');
+    }
+
+    const result = await pool.query(query, params);
+    res.json(result.rows);
+
+  } catch (err) {
+    console.error('Erro na requisicao de busca de pesquisadores:', err);
+    res.status(500).json({ error: 'Erro interno do servidor, por favor tente mais tarde.' });
+  }
+});
+
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -132,6 +237,12 @@ router.post('/', async (req, res) => {
       await client.query('ROLLBACK');
       return res.status(400).json({ error: 'Dados de localidade incompletos.' });
     }
+
+    if (!estadosBrasileiros.includes(localidade_data.nome_estado)) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'O estado fornecido é inválido.' });
+    }
+
     const localidade_id = await findOrCreateLocalidade(client, localidade_data);
 
     const hashedPassword = await bcrypt.hash(password, salt);
