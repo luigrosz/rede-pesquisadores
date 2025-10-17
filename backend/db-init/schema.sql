@@ -163,3 +163,5 @@ CREATE TABLE "org_sociedades"(
     "id_pesquisador" BIGINT NOT NULL,
     FOREIGN KEY("id_pesquisador") REFERENCES "pesquisador"("id_pesquisador")
 );
+
+CREATE EXTENSION unaccent;
