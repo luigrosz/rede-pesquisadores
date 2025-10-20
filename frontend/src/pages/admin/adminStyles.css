@@ -1,0 +1,49 @@
+.container-admin {
+  padding: 20px;
+}
+
+.container-search-admin {
+  margin-bottom: 20px;
+}
+
+.search-bar-admin {
+  padding: 8px;
+  margin-right: 10px;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+}
+
+.btn-search-admin {
+  padding: 8px 15px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.table-admin {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+.table-admin th {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+.table-admin-row td {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+
+.btn-admin-enable-disable {
+  padding: 5px 10px;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  margin-right: 5px;
+}
