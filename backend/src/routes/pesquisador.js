@@ -1,8 +1,13 @@
 import express from 'express';
 import pool from '../db/pool.js';
 import bcrypt from 'bcrypt';
+import { findOrCreateAreaDoutorado, findOrCreateGrupoPesquisa, findOrCreateLocalidade, findOrCreateInstituicao } from '../helper/pesquisador.js';
+// import authMiddleware from '../middleware/authMiddleware.js'; // testar pagina admin - discomente
 
 const router = express.Router();
+
+// router.use(authMiddleware); // testar pagina admin - discomente
+
 const salt = 10;
 
 const estadosBrasileiros = [
@@ -12,69 +17,6 @@ const estadosBrasileiros = [
   'Rio de Janeiro', 'Rio Grande do Norte', 'Rio Grande do Sul', 'Rondônia',
   'Roraima', 'Santa Catarina', 'São Paulo', 'Sergipe', 'Tocantins'
 ];
-
-async function findOrCreateLocalidade(client, { nome_cidade, nome_estado }) {
-  const findQuery = `
-    SELECT id_localidade FROM "localidade"
-    WHERE unaccent(nome_cidade) ILIKE unaccent($1) AND unaccent(nome_estado) ILIKE unaccent($2);
-  `;
-  const findResult = await client.query(findQuery, [nome_cidade, nome_estado]);
-
-  if (findResult.rows.length > 0) {
-    return findResult.rows[0].id_localidade;
-  }
-
-  const insertQuery = `
-    INSERT INTO "localidade" (nome_cidade, nome_estado)
-    VALUES ($1, $2)
-    RETURNING id_localidade;
-  `;
-  const insertResult = await client.query(insertQuery, [nome_cidade, nome_estado]);
-  return insertResult.rows[0].id_localidade;
-}
-
-async function findOrCreateInstituicao(client, instituicao_nome) {
-  const findQuery = 'SELECT id FROM "instituicao" WHERE nome ILIKE $1;';
-  const findResult = await client.query(findQuery, [instituicao_nome]);
-
-  if (findResult.rows.length > 0) {
-    return findResult.rows[0].id;
-  }
-
-  const insertQuery = 'INSERT INTO "instituicao" (nome) VALUES ($1) RETURNING id;';
-  const insertResult = await client.query(insertQuery, [instituicao_nome]);
-  return insertResult.rows[0].id;
-}
-
-async function findOrCreateAreaDoutorado(client, { titulo, instituicao_nome }, id_pesquisador) {
-  const instituicao_id = await findOrCreateInstituicao(client, instituicao_nome);
-
-  const findQuery = 'SELECT id_doutorado FROM "area_doutorado" WHERE titulo ILIKE $1 AND instituicao_id = $2 AND id_pesquisador = $3;';
-  const findResult = await client.query(findQuery, [titulo, instituicao_id, id_pesquisador]);
-
-  if (findResult.rows.length > 0) {
-    return findResult.rows[0].id_doutorado;
-  } else {
-    const insertQuery = 'INSERT INTO "area_doutorado" (id_pesquisador, titulo, instituicao_id) VALUES ($1, $2, $3) RETURNING id_doutorado;';
-    const insertResult = await client.query(insertQuery, [id_pesquisador, titulo, instituicao_id]);
-    return insertResult.rows[0].id_doutorado;
-  }
-}
-
-async function findOrCreateGrupoPesquisa(client, { nome, descricao, instituicao_nome, link }) {
-  const instituicao_id = await findOrCreateInstituicao(client, instituicao_nome);
-
-  const findQuery = 'SELECT id_grupo FROM "grupo_pesquisa" WHERE nome ILIKE $1 AND instituicao = $2;';
-  const findResult = await client.query(findQuery, [nome, instituicao_id]);
-
-  if (findResult.rows.length > 0) {
-    return findResult.rows[0].id_grupo;
-  } else {
-    const insertQuery = 'INSERT INTO "grupo_pesquisa" (nome, descricao, instituicao, link) VALUES ($1, $2, $3, $4) RETURNING id_grupo;';
-    const insertResult = await client.query(insertQuery, [nome, descricao, instituicao_id, link]);
-    return insertResult.rows[0].id_grupo;
-  }
-}
 
 router.get('/', async (req, res) => {
   try {
@@ -383,6 +325,31 @@ router.post('/', async (req, res) => {
     res.status(500).json({ error: 'Erro interno do servidor, por favor tente mais tarde.', details: err.message });
   } finally {
     client.release();
+  }
+});
+
+router.patch('/:id/status', async (req, res) => {
+  const { id } = req.params;
+  const { is_enabled } = req.body;
+
+  if (typeof is_enabled !== 'boolean') {
+    return res.status(400).json({ error: 'O valor de is_enabled deve ser um booleano.' });
+  }
+
+  try {
+    const result = await pool.query(
+      'UPDATE "pesquisador" SET is_enabled = $1 WHERE id_pesquisador = $2 RETURNING id_pesquisador, is_enabled;',
+      [is_enabled, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Pesquisador nao encontrado.' });
+    }
+
+    res.json({ message: `Status do pesquisador ${id} atualizado para ${is_enabled ? 'habilitado' : 'desabilitado'}.`, pesquisador: result.rows[0] });
+  } catch (err) {
+    console.error(`Erro ao atualizar status do pesquisador com ID ${id}:`, err);
+    res.status(500).json({ error: 'Erro interno do servidor, por favor tente mais tarde.', details: err.message });
   }
 });
 
