@@ -1,1 +1,4 @@
 */node_modules/*
+.vite
+**/.pnpm-store
+**/logs/*

@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { jwtDecode } from 'jwt-decode';
 import './loginStyles.css';
 
 function LoginPage() {
@@ -7,6 +8,61 @@ function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotMessage, setForgotMessage] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = localStorage.getItem('accessToken');
+      const refreshToken = localStorage.getItem('refreshToken');
+
+      if (!token) return;
+
+      let decoded;
+      try {
+        decoded = jwtDecode(token);
+      } catch (e) {
+        console.error('Invalid token format:', e);
+        localStorage.clear();
+        return;
+      }
+
+      const currentTime = Date.now() / 1000;
+      if (decoded.exp > currentTime) {
+        navigate('/main');
+        return;
+      }
+
+      if (refreshToken) {
+        try {
+          const response = await fetch('http://localhost:3000/auth/refresh-token', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ refreshToken }),
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            localStorage.setItem('accessToken', data.accessToken);
+            localStorage.setItem('refreshToken', data.refreshToken);
+            navigate('/main');
+          } else if (response.status === 401 || response.status === 403) {
+            localStorage.clear();
+          }
+        } catch (e) {
+          console.error('Network error during token refresh:', e);
+        }
+      } else {
+        localStorage.clear();
+      }
+    };
+
+    checkAuth();
+  }, [navigate]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -21,18 +77,18 @@ function LoginPage() {
         body: JSON.stringify({ email, password }),
       });
 
-
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Falha no login');
       }
 
       const data = await response.json();
-      const { token, refreshToken } = data;
 
-      localStorage.setItem('accessToken', token);
+      const { accessToken, refreshToken, nome } = data;
+
+      localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('refreshToken', refreshToken);
+      localStorage.setItem('userName', nome);
 
       navigate('/main');
     } catch (err) {
@@ -43,6 +99,29 @@ function LoginPage() {
 
   const handleRegister = () => {
     navigate('/register');
+  };
+
+  const handleGuestAccess = () => {
+    navigate('/main');
+  };
+
+  const handleForgotSubmit = async (e) => {
+    e.preventDefault();
+    setForgotLoading(true);
+    setForgotMessage('');
+    try {
+      const res = await fetch('http://localhost:3000/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail }),
+      });
+      const data = await res.json();
+      setForgotMessage(data.message || 'Email enviado.');
+    } catch {
+      setForgotMessage('Erro ao enviar. Tente novamente.');
+    } finally {
+      setForgotLoading(false);
+    }
   };
 
   return (
@@ -79,6 +158,13 @@ function LoginPage() {
           >
             Entrar
           </button>
+          <button
+            type="button"
+            onClick={() => { setShowForgotModal(true); setForgotMessage(''); setForgotEmail(''); }}
+            style={{ background: 'none', border: 'none', color: '#007bff', cursor: 'pointer', marginTop: '8px', fontSize: '0.875rem' }}
+          >
+            Esqueceu sua senha?
+          </button>
         </form>
         <hr className='login-hr' />
         <p className='login-text-no-account'>Não tem uma conta?</p>
@@ -88,7 +174,57 @@ function LoginPage() {
         >
           Cadastre-se
         </button>
+
+        {/* Botao Convidado */}
+        <button
+          onClick={handleGuestAccess}
+          className='login-button-guest'
+          style={{
+            marginTop: '15px',
+            width: '100%',
+            padding: '10px',
+            cursor: 'pointer',
+            backgroundColor: '#6c757d',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            fontSize: '1rem'
+          }}
+        >
+          Entrar como Visitante
+        </button>
+
       </div>
+      {showForgotModal && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '8px', width: '90%', maxWidth: '400px' }}>
+            <h2 style={{ marginTop: 0 }}>Recuperar senha</h2>
+            {forgotMessage ? (
+              <>
+                <p>{forgotMessage}</p>
+                <button onClick={() => setShowForgotModal(false)} style={{ width: '100%', padding: '10px', cursor: 'pointer' }}>Fechar</button>
+              </>
+            ) : (
+              <form onSubmit={handleForgotSubmit}>
+                <label style={{ display: 'block', marginBottom: '6px' }}>Informe seu email:</label>
+                <input
+                  type="email"
+                  value={forgotEmail}
+                  onChange={e => setForgotEmail(e.target.value)}
+                  required
+                  style={{ width: '100%', padding: '8px', marginBottom: '16px', boxSizing: 'border-box' }}
+                />
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button type="button" onClick={() => setShowForgotModal(false)} style={{ flex: 1, padding: '10px', cursor: 'pointer' }}>Cancelar</button>
+                  <button type="submit" disabled={forgotLoading} style={{ flex: 1, padding: '10px', cursor: 'pointer', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px' }}>
+                    {forgotLoading ? 'Enviando...' : 'Enviar'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
