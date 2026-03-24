@@ -14,13 +14,9 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.registration-header {
-  text-align: center;
-  margin-bottom: 24px;
-}
-
 .registration-header h1 {
   color: #1c1e21;
+  margin: 0;
 }
 
 .registration-header p {
@@ -116,8 +112,71 @@ legend {
   border-color: #c00;
 }
 
+.step-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+  gap: 0;
+}
+
+.step {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: #e4e6e9;
+  color: #606770;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.step.active {
+  background-color: #0056b3;
+  color: white;
+}
+
+.step.completed {
+  background-color: #28a745;
+  color: white;
+}
+
+.step-line {
+  width: 60px;
+  height: 4px;
+  background-color: #e4e6e9;
+}
+
+.step-line.completed {
+  background-color: #28a745;
+}
+
+.registration-intro {
+  color: #606770;
+  text-align: center;
+  margin-bottom: 24px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.subsection-title {
+  font-weight: 600;
+  color: #333;
+  margin: 16px 0 8px 0;
+  grid-column: 1 / -1;
+}
+
+.registration-buttons {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+}
+
 .submit-btn {
-  width: 100%;
+  flex: 1;
+  max-width: 300px;
   padding: 12px;
   background-color: #0056b3;
   color: white;
@@ -126,6 +185,51 @@ legend {
   font-size: 1.1rem;
   font-weight: 700;
   cursor: pointer;
+}
+
+.submit-btn:disabled {
+  background-color: #a0c4e8;
+  cursor: not-allowed;
+}
+
+.skip-btn {
+  flex: 1;
+  max-width: 300px;
+  padding: 12px;
+  background-color: #f0f2f5;
+  color: #606770;
+  border: 1px solid #dddfe2;
+  border-radius: 6px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.skip-btn:hover {
+  background-color: #e4e6e9;
+}
+
+.registration-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.registration-header button {
+  padding: 8px 16px;
+  background-color: #f0f2f5;
+  color: #606770;
+  border: 1px solid #dddfe2;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.registration-header button:hover {
+  background-color: #e4e6e9;
 }
 
 @media (min-width: 768px) {
@@ -141,7 +245,8 @@ legend {
   }
 
   legend,
-  .submit-btn {
+  .submit-btn,
+  .registration-buttons {
     grid-column: 1 / -1;
   }
 

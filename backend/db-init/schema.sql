@@ -37,6 +37,7 @@ CREATE TABLE "pesquisador"(
     "area_doutorado" BIGINT NULL,
     "is_enabled" BOOLEAN NOT NULL DEFAULT FALSE,
     "sbfte" BOOLEAN DEFAULT FALSE,
+    "enabled_until" DATE NULL,
     FOREIGN KEY("localidade") REFERENCES "localidade"("id_localidade"),
     FOREIGN KEY("area_doutorado") REFERENCES "area_doutorado"("id_doutorado")
 );
@@ -76,8 +77,8 @@ CREATE TABLE "servico"(
     "id_pesquisador" BIGINT NOT NULL,
     "nome" TEXT NOT NULL,
     "descricao" TEXT NOT NULL,
-    "area" BIGINT NOT NULL,
-    "tipo" BIGINT NOT NULL,
+    "area" TEXT NOT NULL,
+    "tipo" TEXT NOT NULL,
     "localidade" BIGINT NOT NULL,
     FOREIGN KEY("id_pesquisador") REFERENCES "pesquisador"("id_pesquisador"),
     FOREIGN KEY("localidade") REFERENCES "localidade"("id_localidade")
