@@ -53,7 +53,7 @@ router.post('/', registrationLimiter, async (req, res) => {
       servicos, equipamentos
     } = req.body;
 
-    if (!nome || !email || !password || !celular || !laboratorio) {
+    if (!nome || !email || !password || !celular) {
       await client.query('ROLLBACK');
       return res.status(400).json({ error: 'Campos obrigatórios faltando: nome, email, senha, celular, laboratório.' });
     }

@@ -4,7 +4,7 @@ services:
       context: ./frontend
       network: host
       args:
-        VITE_API_URL: https://conectafarmaco.lgrz.xyz
+        VITE_API_URL: https://conectafarmaco.lgrz.xyz/api
     ports:
       - "12862:80"
     restart: always
