@@ -255,7 +255,7 @@ function ProfilePage() {
       </button>
 
       <div className="profile-header">
-        <h1 className="profile-title">Página de Perfil</h1>
+        <h1 className="profile-title">{userData.name || 'Perfil do Pesquisador'}</h1>
         {canEdit && (
           <button
             type="button"

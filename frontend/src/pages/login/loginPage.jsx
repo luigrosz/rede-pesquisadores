@@ -127,7 +127,7 @@ function LoginPage() {
   return (
     <div className='login-root'>
       <div className='login-container'>
-        <h1 className='login-title'>Login</h1>
+        <h1 className='login-title'>ConectaFarmaco</h1>
         <form onSubmit={handleLogin}>
           <div className='login-input-container'>
             <label htmlFor="email" className='login-input-label'>Email:</label>

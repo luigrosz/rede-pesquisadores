@@ -4,3 +4,4 @@ backend/.env
 .vite
 **/.pnpm-store
 **/logs/*
+backups

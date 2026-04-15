@@ -225,7 +225,7 @@ function AdminPage() {
 
   return (
     <div className='container-admin'>
-      <h1>Página do Administrador</h1>
+      <h1>Painel Administrativo</h1>
 
       {isMasterAdmin && (
         <div style={{ marginBottom: '20px', padding: '15px', border: '1px solid #ccc', borderRadius: '8px', maxWidth: '400px', margin: '0 auto 20px auto', textAlign: 'center' }}>

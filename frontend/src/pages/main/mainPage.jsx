@@ -9,6 +9,7 @@ function MainPage() {
   const token = localStorage.getItem('accessToken');
   const isLoggedIn = !!token; // convert string to boolean (true if token exists)
   const [loggedInUserName] = useState(localStorage.getItem('userName') || '');
+  const isAdmin = isLoggedIn && (() => { try { return jwtDecode(token).isAdmin; } catch { return false; } })();
   const [subscriptionInfo, setSubscriptionInfo] = useState(null);
 
   useEffect(() => {
@@ -247,11 +248,18 @@ function MainPage() {
         {isLoggedIn ? "Sair" : "Entrar"}
       </button>
       <div className="main-page-header">
-        <h1>Pagina Principal</h1>
+        <h1>Busca de Pesquisadores</h1>
         {isLoggedIn && getSubscriptionLabel() && (
-          <span style={{ fontSize: '0.9rem', color: getSubscriptionLabel().color, fontWeight: 'bold' }}>
-            {getSubscriptionLabel().text}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '8px' }}>
+            <span style={{ fontSize: '0.9rem', color: getSubscriptionLabel().color, fontWeight: 'bold' }}>
+              {getSubscriptionLabel().text}
+            </span>
+            {isAdmin && (
+              <button onClick={() => navigate('/admin')} style={{ backgroundColor: '#6f42c1', color: 'white', border: 'none', borderRadius: '5px', padding: '6px 14px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.9rem' }}>
+                Painel Admin
+              </button>
+            )}
+          </div>
         )}
       </div>
 
