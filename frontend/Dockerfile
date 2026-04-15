@@ -8,17 +8,14 @@ COPY package*.json ./
 RUN pnpm install
 
 COPY . .
+
+ARG VITE_API_URL=http://localhost:3000
+ENV VITE_API_URL=$VITE_API_URL
+
 RUN pnpm run build
 
-
-
-# COMENTE SE DESCOMENTAR O PROXIMO TRECHO
-EXPOSE 5173
-CMD ["pnpm", "dev"]
-
-
-# DESCOMENTE PARA USO EM PRODUCAO
-# FROM nginx:alpine
-# COPY --from=build /app/dist /usr/share/nginx/html
-# EXPOSE 80
-# CMD ["nginx", "-g", "daemon off;"]
+FROM nginx:alpine
+COPY --from=build /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]

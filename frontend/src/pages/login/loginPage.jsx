@@ -23,11 +23,10 @@ function LoginPage() {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:3000/auth/login', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/login`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ email, password }),
       });
 
@@ -40,6 +39,7 @@ function LoginPage() {
 
       localStorage.setItem('userId', data.id);
       localStorage.setItem('isAdmin', data.isAdmin);
+      localStorage.setItem('isMasterAdmin', data.isMasterAdmin);
       localStorage.setItem('userName', data.nome);
       localStorage.setItem('userEmail', data.email);
 
@@ -63,7 +63,7 @@ function LoginPage() {
     setForgotLoading(true);
     setForgotMessage('');
     try {
-      const res = await fetch('http://localhost:3000/auth/forgot-password', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: forgotEmail }),

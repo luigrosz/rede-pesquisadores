@@ -1,5 +1,4 @@
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
-import { jwtDecode } from "jwt-decode";
 
 import RegistrationPage from './pages/registration/registrationPage';
 import RegistrationPage2 from './pages/registration/registrationPage2';
@@ -12,32 +11,14 @@ import ProfilePage from './pages/profile/ProfilePage';
 import ResetPasswordPage from './pages/resetPassword/resetPasswordPage';
 
 const AdminRoutes = () => {
-  const token = localStorage.getItem('accessToken');
+  const userId = localStorage.getItem('userId');
+  const isAdmin = localStorage.getItem('isAdmin') === 'true';
 
-  if (!token) {
+  if (!userId || !isAdmin) {
     return <Navigate to="/" />;
   }
 
-  try {
-    const decoded = jwtDecode(token);
-    const currentTime = Date.now() / 1000;
-
-    if (decoded.exp < currentTime) {
-      localStorage.clear();
-      return <Navigate to="/" />;
-    }
-
-    if (decoded.isAdmin) {
-      return <Outlet />;
-    } else {
-      return <Navigate to="/" />;
-    }
-
-  } catch (e) {
-    console.error(e);
-    localStorage.clear();
-    return <Navigate to="/" />;
-  }
+  return <Outlet />;
 };
 
 function App() {

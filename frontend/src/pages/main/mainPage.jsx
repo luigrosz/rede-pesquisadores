@@ -16,7 +16,7 @@ function MainPage() {
       try {
         const id = localStorage.getItem('userId');
         if (isAdmin) { setSubscriptionInfo({ isAdmin: true }); return; }
-        const res = await fetch(`http://localhost:3000/pesquisador/${id}`);
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/pesquisador/${id}`, { credentials: 'include' });
         if (!res.ok) return;
         const data = await res.json();
         setSubscriptionInfo({ isAdmin: false, enabledUntil: data.enabled_until || null });
@@ -127,7 +127,7 @@ function MainPage() {
       if (serviceFilter) searchBody.servico = serviceFilter;
     }
 
-    const url = `http://localhost:3000/pesquisador/pesquisar/ativos`;
+    const url = `${import.meta.env.VITE_API_URL}/pesquisador/pesquisar/ativos`;
 
     try {
       const response = await fetch(url, {
@@ -205,7 +205,7 @@ function MainPage() {
     };
 
     try {
-      const response = await fetch('http://localhost:3000/mail/send-email', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/mail/send-email`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -229,9 +229,10 @@ function MainPage() {
 
   const handleAuthAction = async () => {
     if (isLoggedIn) {
-      await fetch('http://localhost:3000/auth/logout', { method: 'POST', credentials: 'include' });
+      await fetch(`${import.meta.env.VITE_API_URL}/auth/logout`, { method: 'POST', credentials: 'include' });
       localStorage.removeItem('userId');
       localStorage.removeItem('isAdmin');
+      localStorage.removeItem('isMasterAdmin');
       localStorage.removeItem('userName');
       localStorage.removeItem('userEmail');
       window.location.reload();

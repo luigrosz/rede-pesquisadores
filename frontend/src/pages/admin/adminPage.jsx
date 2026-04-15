@@ -23,13 +23,14 @@ function AdminPage() {
     setLoading(true);
     setError('');
     try {
-      const url = 'http://localhost:3000/pesquisador/pesquisar';
+      const url = `${import.meta.env.VITE_API_URL}/pesquisador/pesquisar`;
       const requestBody = {};
       if (pesquisador) requestBody.nome = pesquisador;
 
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(requestBody),
       });
 
@@ -54,8 +55,8 @@ function AdminPage() {
 
   useEffect(() => {
     fetchAdminData();
-    setIsMasterAdmin(localStorage.getItem('userEmail') === 'admin@admin.com');
-    fetch('http://localhost:3000/pesquisador/mensalidade')
+    setIsMasterAdmin(localStorage.getItem('isMasterAdmin') === 'true');
+    fetch(`${import.meta.env.VITE_API_URL}/pesquisador/mensalidade`)
       .then(r => r.json())
       .then(d => { setMensalidade(d.mensalidade); setNewMensalidade(d.mensalidade); })
       .catch(() => {});
@@ -65,7 +66,7 @@ function AdminPage() {
   const handleMakeAdmin = async (pesquisadorId, currentAdminStatus) => {
     const newAdminStatus = !currentAdminStatus;
     try {
-      const response = await fetch(`http://localhost:3000/pesquisador/${pesquisadorId}/admin`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/pesquisador/${pesquisadorId}/admin`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -91,9 +92,10 @@ function AdminPage() {
   };
 
   const handleLogout = async () => {
-    await fetch('http://localhost:3000/auth/logout', { method: 'POST', credentials: 'include' });
+    await fetch(`${import.meta.env.VITE_API_URL}/auth/logout`, { method: 'POST', credentials: 'include' });
     localStorage.removeItem('userId');
     localStorage.removeItem('isAdmin');
+    localStorage.removeItem('isMasterAdmin');
     localStorage.removeItem('userName');
     localStorage.removeItem('userEmail');
     navigate('/');
@@ -117,7 +119,7 @@ function AdminPage() {
       const today = new Date().toISOString().split('T')[0];
       const contributionData = { ...newContribution, data_pagamento: today };
 
-      const response = await fetch(`http://localhost:3000/pesquisador/${currentPesquisadorIdForContribution}/contribuicao`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/pesquisador/${currentPesquisadorIdForContribution}/contribuicao`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -145,7 +147,7 @@ function AdminPage() {
   const handleMensalidadeSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('http://localhost:3000/pesquisador/mensalidade', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/pesquisador/mensalidade`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

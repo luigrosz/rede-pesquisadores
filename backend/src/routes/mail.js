@@ -9,7 +9,7 @@ const router = express.Router();
 const transporter = nodemailer.createTransport({
   service: 'Gmail',
   auth: {
-    user: 'appredefarmaco@gmail.com',
+    user: process.env.MAIL_USER,
     pass: MAIL_SECRET
   }
 });
@@ -18,7 +18,7 @@ router.post('/send-email', authMiddleware, async (req, res) => {
   const { recipientEmail, subject, body } = req.body;
 
   const mailOptions = {
-    from: 'ConectaFarmaco appredefarmaco@gmail.com',
+    from: `ConectaFarmaco <${process.env.MAIL_USER}>`,
     to: recipientEmail,
     subject: subject,
     text: body

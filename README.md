@@ -6,7 +6,7 @@ Para rodar o projeto certifique-se de ter o docker instalado.
 
 Entre no projeto pelo link:
 
-http://localhost:5173
+http://localhost
 
 
 Como recuperar um backup:
@@ -62,8 +62,8 @@ curl -s -X POST http://localhost:3000/pesquisador \
   }'
 ```
 
-2. Ativar a conta diretamente no banco:
+2. Ativar a conta e marcar como master admin diretamente no banco:
 
 ```
-docker compose exec projeto-farmacia-db psql -U postgres -d rede_pesquisadores -c "UPDATE pesquisador SET is_enabled = TRUE WHERE email = 'admin@admin.com';"
+docker compose exec projeto-farmacia-db psql -U postgres -d rede_pesquisadores -c "UPDATE pesquisador SET is_enabled = TRUE, is_master_admin = TRUE WHERE email = 'admin@admin.com';"
 ```

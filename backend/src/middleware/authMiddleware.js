@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 
 const cookieOptions = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
+  secure: process.env.COOKIE_SECURE === 'true',
   sameSite: 'strict',
 };
 

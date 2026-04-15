@@ -5,7 +5,7 @@ import pool from '../db/pool.js';
 const transporter = nodemailer.createTransport({
   service: 'Gmail',
   auth: {
-    user: 'projetofarmaciateste@gmail.com',
+    user: process.env.MAIL_USER,
     pass: process.env.MAIL_SECRET,
   },
 });
@@ -15,14 +15,13 @@ async function sendSubscriptionReminders() {
     const result = await pool.query(`
       SELECT nome, email FROM pesquisador
       WHERE is_enabled = TRUE
-        AND is_admin = FALSE
-        AND email != 'admin@admin.com'
+        AND is_master_admin = FALSE
         AND enabled_until::date = (NOW() + INTERVAL '7 days')::date
     `);
 
     for (const { nome, email } of result.rows) {
       await transporter.sendMail({
-        from: 'NOME_DO_APP projetofarmaciateste@gmail.com',
+        from: `ConectaFarmaco <${process.env.MAIL_USER}>`,
         to: email,
         subject: 'Sua assinatura expira em 7 dias',
         text: `Olá, ${nome}!\n\nSua assinatura na plataforma expirará em 7 dias. Para continuar com acesso, entre em contato com um administrador para renovar sua contribuição.\n\nAtenciosamente,\nEquipe da Plataforma`,

@@ -36,6 +36,7 @@ CREATE TABLE "pesquisador"(
     "laboratorio" TEXT NOT NULL,
     "area_doutorado" BIGINT NULL,
     "is_enabled" BOOLEAN NOT NULL DEFAULT FALSE,
+    "is_master_admin" BOOLEAN NOT NULL DEFAULT FALSE,
     "sbfte" BOOLEAN DEFAULT FALSE,
     "enabled_until" DATE NULL,
     FOREIGN KEY("localidade") REFERENCES "localidade"("id_localidade"),
@@ -181,3 +182,7 @@ CREATE TABLE "configuracao"(
 INSERT INTO "configuracao" ("chave", "valor") VALUES ('mensalidade', '100');
 
 CREATE EXTENSION unaccent;
+
+CREATE INDEX idx_pesquisador_email ON pesquisador(email);
+CREATE INDEX idx_pesquisador_enabled_until ON pesquisador(enabled_until);
+CREATE INDEX idx_pesquisador_is_enabled ON pesquisador(is_enabled);

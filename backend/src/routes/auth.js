@@ -19,7 +19,7 @@ const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
 
 const cookieOptions = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
+  secure: process.env.COOKIE_SECURE === 'true',
   sameSite: 'strict',
 };
 
@@ -28,7 +28,7 @@ router.post('/login', async (req, res) => {
 
   try {
     const userResult = await pool.query(
-      'SELECT id_pesquisador, nome, email, password, is_enabled, is_admin FROM "pesquisador" WHERE email = $1',
+      'SELECT id_pesquisador, nome, email, password, is_enabled, is_admin, is_master_admin FROM "pesquisador" WHERE email = $1',
       [email]
     );
 
@@ -47,7 +47,7 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Credenciais invalidas.' });
     }
 
-    const payload = { id: user.id_pesquisador, email: user.email, isAdmin: user.is_admin };
+    const payload = { id: user.id_pesquisador, email: user.email, isAdmin: user.is_admin, isMasterAdmin: user.is_master_admin };
 
     const accessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' });
     const refreshToken = jwt.sign(payload, JWT_REFRESH_SECRET, { expiresIn: '7d' });
@@ -60,6 +60,7 @@ router.post('/login', async (req, res) => {
       nome: user.nome,
       id: user.id_pesquisador,
       isAdmin: user.is_admin,
+      isMasterAdmin: user.is_master_admin,
       email: user.email,
     });
 

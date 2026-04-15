@@ -2,9 +2,21 @@ import express from 'express';
 import pool from '../db/pool.js';
 import bcrypt from 'bcrypt';
 import winston from 'winston';
+import rateLimit from 'express-rate-limit';
 
 import { findOrCreateAreaDoutorado, findOrCreateGrupoPesquisa, findOrCreateLocalidade, findOrCreateInstituicao } from '../helper/pesquisador.js';
 import authMiddleware from '../middleware/authMiddleware.js';
+import optionalAuthMiddleware from '../middleware/optionalAuthMiddleware.js';
+
+const registrationLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  message: { error: 'Muitas tentativas de cadastro. Tente novamente em 1 hora.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const logger = winston.createLogger({
   level: 'info',
@@ -27,7 +39,7 @@ const estadosBrasileiros = [
   'Roraima', 'Santa Catarina', 'São Paulo', 'Sergipe', 'Tocantins'
 ];
 
-router.post('/', async (req, res) => {
+router.post('/', registrationLimiter, async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -41,6 +53,14 @@ router.post('/', async (req, res) => {
       servicos, equipamentos
     } = req.body;
 
+    if (!nome || !email || !password || !celular || !laboratorio) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Campos obrigatórios faltando: nome, email, senha, celular, laboratório.' });
+    }
+    if (!EMAIL_REGEX.test(email)) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Email inválido.' });
+    }
     if (!password || password.length < 8) {
       await client.query('ROLLBACK');
       return res.status(400).json({ error: 'A senha deve ter pelo menos 8 caracteres.' });
@@ -315,7 +335,7 @@ router.get('/mensalidade', async (req, res) => {
 
 router.patch('/mensalidade', authMiddleware, async (req, res) => {
   try {
-    if (req.user.email !== 'admin@admin.com') {
+    if (!req.user.isMasterAdmin) {
       return res.status(403).json({ error: 'Apenas o admin master pode alterar a mensalidade.' });
     }
     const { valor } = req.body;
@@ -329,7 +349,8 @@ router.patch('/mensalidade', authMiddleware, async (req, res) => {
   }
 });
 
-router.post('/pesquisar', async (req, res) => {
+router.post('/pesquisar', authMiddleware, async (req, res) => {
+  if (!req.user.isAdmin) return res.status(403).json({ error: 'Acesso negado.' });
   try {
     const result = await executePesquisadorSearch(req.body);
     res.json(result);
@@ -348,7 +369,7 @@ router.post('/pesquisar/ativos', async (req, res) => {
   }
 });
 
-router.get('/:id', async (req, res) => {
+router.get('/:id', optionalAuthMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
     const pesquisadorResult = await pool.query(
@@ -400,6 +421,13 @@ router.get('/:id', async (req, res) => {
       [id]
     );
     pesquisador.equipamentos = equipamentosResult.rows;
+
+    if (!req.user) {
+      delete pesquisador.email;
+      delete pesquisador.celular;
+      delete pesquisador.is_enabled;
+      delete pesquisador.enabled_until;
+    }
 
     res.json(pesquisador);
   } catch (err) {
