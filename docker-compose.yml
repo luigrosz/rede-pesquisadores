@@ -40,8 +40,6 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./backend/db-init:/docker-entrypoint-initdb.d
-    ports:
-      - "5432:5432"
     env_file:
       - ./backend/.env
 

@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import express from 'express';
+import authMiddleware from '../middleware/authMiddleware.js';
 
 const MAIL_SECRET = process.env.MAIL_SECRET;
 
@@ -13,7 +14,7 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-router.post('/send-email', async (req, res) => {
+router.post('/send-email', authMiddleware, async (req, res) => {
   const { recipientEmail, subject, body } = req.body;
 
   const mailOptions = {
@@ -29,7 +30,7 @@ router.post('/send-email', async (req, res) => {
     res.status(200).json({ message: 'E-mail enviado com sucesso!' });
   } catch (error) {
     console.error('Erro ao enviar e-mail:', error);
-    res.status(500).json({ error: 'Falha ao enviar e-mail.', details: error.message });
+    res.status(500).json({ error: 'Falha ao enviar e-mail.' });
   }
 });
 

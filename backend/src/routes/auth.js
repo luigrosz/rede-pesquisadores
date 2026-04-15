@@ -8,7 +8,7 @@ import pool from '../db/pool.js';
 const transporter = nodemailer.createTransport({
   service: 'Gmail',
   auth: {
-    user: 'projetofarmaciateste@gmail.com',
+    user: process.env.MAIL_USER,
     pass: process.env.MAIL_SECRET,
   },
 });
@@ -16,6 +16,12 @@ const transporter = nodemailer.createTransport({
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
+
+const cookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'strict',
+};
 
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
@@ -37,36 +43,24 @@ router.post('/login', async (req, res) => {
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
-
     if (!isMatch) {
       return res.status(400).json({ error: 'Credenciais invalidas.' });
     }
 
-    const accessToken = jwt.sign(
-      {
-        id: user.id_pesquisador,
-        email: user.email,
-        isAdmin: user.is_admin
-      },
-      JWT_SECRET,
-      { expiresIn: '1h' }
-    );
+    const payload = { id: user.id_pesquisador, email: user.email, isAdmin: user.is_admin };
 
-    const refreshToken = jwt.sign(
-      {
-        id: user.id_pesquisador,
-        email: user.email,
-        isAdmin: user.is_admin
-      },
-      JWT_REFRESH_SECRET,
-      { expiresIn: '7d' }
-    );
+    const accessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' });
+    const refreshToken = jwt.sign(payload, JWT_REFRESH_SECRET, { expiresIn: '7d' });
+
+    res.cookie('accessToken', accessToken, { ...cookieOptions, maxAge: 60 * 60 * 1000 });
+    res.cookie('refreshToken', refreshToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 });
 
     return res.status(200).json({
       message: 'Sucesso',
-      accessToken,
-      refreshToken,
-      nome: user.nome
+      nome: user.nome,
+      id: user.id_pesquisador,
+      isAdmin: user.is_admin,
+      email: user.email,
     });
 
   } catch (err) {
@@ -76,7 +70,7 @@ router.post('/login', async (req, res) => {
 });
 
 router.post('/refresh-token', async (req, res) => {
-  const { refreshToken } = req.body;
+  const refreshToken = req.cookies.refreshToken;
 
   if (!refreshToken) {
     return res.status(401).json({ error: 'Token de atualizacao nao encontrado.' });
@@ -84,59 +78,48 @@ router.post('/refresh-token', async (req, res) => {
 
   try {
     const decoded = jwt.verify(refreshToken, JWT_REFRESH_SECRET);
+    const payload = { id: decoded.id, email: decoded.email, isAdmin: decoded.isAdmin };
 
-    const newAccessToken = jwt.sign(
-      {
-        id: decoded.id,
-        email: decoded.email,
-        isAdmin: decoded.isAdmin
-      },
-      JWT_SECRET,
-      { expiresIn: '1h' }
-    );
+    const newAccessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' });
+    const newRefreshToken = jwt.sign(payload, JWT_REFRESH_SECRET, { expiresIn: '7d' });
 
-    const newRefreshToken = jwt.sign(
-      {
-        id: decoded.id,
-        email: decoded.email,
-        isAdmin: decoded.isAdmin
-      },
-      JWT_REFRESH_SECRET,
-      { expiresIn: '7d' }
-    );
+    res.cookie('accessToken', newAccessToken, { ...cookieOptions, maxAge: 60 * 60 * 1000 });
+    res.cookie('refreshToken', newRefreshToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 });
 
-    res.json({
-      message: 'Token renovado com sucesso!',
-      accessToken: newAccessToken,
-      refreshToken: newRefreshToken,
-    });
+    res.json({ message: 'Token renovado com sucesso!' });
 
   } catch (err) {
-    console.error('Erro ao renovar o token:', err);
+    res.clearCookie('accessToken');
+    res.clearCookie('refreshToken');
     if (err.name === 'TokenExpiredError') {
-      return res.status(401).json({ error: 'Token de atualizacao expirado. Por favor, faça login novamente.' });
+      return res.status(401).json({ error: 'Sessão expirada. Por favor, faça login novamente.' });
     }
     return res.status(403).json({ error: 'Token de atualização invalido.' });
   }
+});
+
+router.post('/logout', (req, res) => {
+  res.clearCookie('accessToken');
+  res.clearCookie('refreshToken');
+  res.json({ message: 'Logout realizado com sucesso.' });
 });
 
 router.post('/forgot-password', async (req, res) => {
   const { email } = req.body;
   try {
     const result = await pool.query('SELECT id_pesquisador, nome FROM pesquisador WHERE email = $1', [email]);
-    // Responde sempre com sucesso para não revelar se o email existe
     if (result.rows.length === 0) return res.json({ message: 'Se este email estiver cadastrado, você receberá um link de recuperação.' });
 
     const { id_pesquisador, nome } = result.rows[0];
     const token = crypto.randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutos
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
 
     await pool.query('DELETE FROM password_reset_tokens WHERE id_pesquisador = $1', [id_pesquisador]);
     await pool.query('INSERT INTO password_reset_tokens (token, id_pesquisador, expires_at) VALUES ($1, $2, $3)', [token, id_pesquisador, expiresAt]);
 
-    const resetLink = `http://localhost:5173/reset-password?token=${token}`;
+    const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${token}`;
     await transporter.sendMail({
-      from: 'NOME_DO_APP projetofarmaciateste@gmail.com',
+      from: `ConectaFarmaco <${process.env.MAIL_USER}>`,
       to: email,
       subject: 'Recuperação de senha',
       text: `Olá, ${nome}!\n\nClique no link abaixo para redefinir sua senha (válido por 30 minutos):\n\n${resetLink}\n\nSe você não solicitou a recuperação, ignore este email.`,
@@ -152,6 +135,7 @@ router.post('/forgot-password', async (req, res) => {
 router.post('/reset-password', async (req, res) => {
   const { token, password } = req.body;
   if (!token || !password) return res.status(400).json({ error: 'Token e senha são obrigatórios.' });
+  if (password.length < 8) return res.status(400).json({ error: 'A senha deve ter pelo menos 8 caracteres.' });
 
   try {
     const result = await pool.query('SELECT id_pesquisador, expires_at FROM password_reset_tokens WHERE token = $1', [token]);

@@ -165,4 +165,12 @@ CREATE TABLE "org_sociedades"(
     FOREIGN KEY("id_pesquisador") REFERENCES "pesquisador"("id_pesquisador")
 );
 
+CREATE TABLE "password_reset_tokens"(
+    "id" SERIAL NOT NULL PRIMARY KEY,
+    "token" VARCHAR(255) NOT NULL UNIQUE,
+    "id_pesquisador" BIGINT NOT NULL,
+    "expires_at" TIMESTAMP NOT NULL,
+    FOREIGN KEY("id_pesquisador") REFERENCES "pesquisador"("id_pesquisador") ON DELETE CASCADE
+);
+
 CREATE EXTENSION unaccent;

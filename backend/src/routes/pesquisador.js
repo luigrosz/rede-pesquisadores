@@ -41,6 +41,11 @@ router.post('/', async (req, res) => {
       servicos, equipamentos
     } = req.body;
 
+    if (!password || password.length < 8) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'A senha deve ter pelo menos 8 caracteres.' });
+    }
+
     const existingPesquisador = await client.query('SELECT id_pesquisador FROM "pesquisador" WHERE email = $1', [email]);
     if (existingPesquisador.rows.length > 0) {
       await client.query('ROLLBACK');
@@ -196,7 +201,7 @@ router.post('/', async (req, res) => {
   } catch (err) {
     await client.query('ROLLBACK');
     console.error('Erro ao cadastrar pesquisador:', err);
-    res.status(500).json({ error: 'Erro interno do servidor.', details: err.message });
+    res.status(500).json({ error: 'Erro interno do servidor.' });
   } finally {
     client.release();
   }
@@ -308,10 +313,9 @@ router.get('/mensalidade', async (req, res) => {
   }
 });
 
-router.patch('/mensalidade', async (req, res) => {
+router.patch('/mensalidade', authMiddleware, async (req, res) => {
   try {
-    const result = await pool.query(`SELECT email FROM pesquisador WHERE id_pesquisador = $1`, [req.body.user_id]);
-    if (!result.rows.length || result.rows[0].email !== 'admin@admin.com') {
+    if (req.user.email !== 'admin@admin.com') {
       return res.status(403).json({ error: 'Apenas o admin master pode alterar a mensalidade.' });
     }
     const { valor } = req.body;
@@ -325,22 +329,12 @@ router.patch('/mensalidade', async (req, res) => {
   }
 });
 
-router.get('/', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM "pesquisador"');
-    res.json(result.rows);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Erro interno' });
-  }
-});
-
 router.post('/pesquisar', async (req, res) => {
   try {
     const result = await executePesquisadorSearch(req.body);
     res.json(result);
   } catch (err) {
-    res.status(500).json({ error: 'Erro interno', details: err.message });
+    res.status(500).json({ error: 'Erro interno' });
   }
 });
 
@@ -350,7 +344,7 @@ router.post('/pesquisar/ativos', async (req, res) => {
     const result = await executePesquisadorSearch(searchParams);
     res.json(result);
   } catch (err) {
-    res.status(500).json({ error: 'Erro interno', details: err.message });
+    res.status(500).json({ error: 'Erro interno' });
   }
 });
 
@@ -414,8 +408,13 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', authMiddleware, async (req, res) => {
   const { id } = req.params;
+
+  if (req.user.id !== parseInt(id) && !req.user.isAdmin) {
+    return res.status(403).json({ error: 'Sem permissão para editar este perfil.' });
+  }
+
   const client = await pool.connect();
 
   try {
@@ -539,7 +538,7 @@ router.use(authMiddleware);
 
 router.post('/:id/contribuicao', async (req, res) => {
   const { id } = req.params;
-  const { valor, metodo, data_pagamento, user_id } = req.body;
+  const { valor, metodo, data_pagamento } = req.body;
 
   if (!valor || !metodo) {
     return res.status(400).json({ error: 'Dados de contribuicao incompletos. Valor e metodo são obrigatórios.' });
@@ -573,7 +572,7 @@ router.post('/:id/contribuicao', async (req, res) => {
 
     await client.query('COMMIT');
 
-    logger.info({ admin_id: user_id, action: 'ADD_CONTRIBUICAO', target_id: Number(id), timestamp: new Date() });
+    logger.info({ admin_id: req.user.id, action: 'ADD_CONTRIBUICAO', target_id: Number(id), timestamp: new Date() });
 
     res.status(201).json({
       message: 'Contribuição registrada.',
@@ -592,7 +591,7 @@ router.post('/:id/contribuicao', async (req, res) => {
 
 router.patch('/:id/admin', async (req, res) => {
   const { id } = req.params;
-  const { is_admin, user_id } = req.body;
+  const { is_admin } = req.body;
 
   if (typeof is_admin !== 'boolean') return res.status(400).json({ error: 'Booleano requerido.' });
 
@@ -605,7 +604,7 @@ router.patch('/:id/admin', async (req, res) => {
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Não encontrado.' });
 
-    logger.info({ admin_id: user_id, action: is_admin ? 'ADD_ADMIN' : 'REMOVE_ADMIN', target_id: Number(id), timestamp: new Date() });
+    logger.info({ admin_id: req.user.id, action: is_admin ? 'ADD_ADMIN' : 'REMOVE_ADMIN', target_id: Number(id), timestamp: new Date() });
 
     res.json({ message: `Admin status: ${is_admin}`, pesquisador: result.rows[0] });
   } catch (err) {

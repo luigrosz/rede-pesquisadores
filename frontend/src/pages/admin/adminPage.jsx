@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { jwtDecode } from 'jwt-decode';
 import './adminStyles.css';
 
 function AdminPage() {
@@ -26,38 +25,25 @@ function AdminPage() {
     try {
       const url = 'http://localhost:3000/pesquisador/pesquisar';
       const requestBody = {};
-      if (pesquisador) {
-        requestBody.nome = pesquisador;
-      }
+      if (pesquisador) requestBody.nome = pesquisador;
 
       const response = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody),
       });
-
-      let decodedToken;
-      const token = localStorage.getItem('accessToken');
-      try {
-        decodedToken = jwtDecode(token);
-      } catch (e) {
-        console.error('Invalid token format:', e);
-        localStorage.clear();
-        navigate('/');
-        return;
-      }
 
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Falha ao buscar dados do administrador.');
-      } else {
-        const data = await response.json();
-        const dataWithRemovedLoggedUser = data.filter(item => item.id_pesquisador !== decodedToken.id);
-        const sortedData = dataWithRemovedLoggedUser.sort((a, b) => a.id_pesquisador - b.id_pesquisador);
-        setAdminData(sortedData);
       }
+
+      const loggedUserId = Number(localStorage.getItem('userId'));
+      const data = await response.json();
+      const sortedData = data
+        .filter(item => item.id_pesquisador !== loggedUserId)
+        .sort((a, b) => a.id_pesquisador - b.id_pesquisador);
+      setAdminData(sortedData);
     } catch (err) {
       console.error('Erro ao buscar dados do administrador:', err);
       setError(err.message || 'Erro ao buscar dados.');
@@ -68,15 +54,7 @@ function AdminPage() {
 
   useEffect(() => {
     fetchAdminData();
-
-    const token = localStorage.getItem('accessToken');
-    if (token) {
-      try {
-        const decoded = jwtDecode(token);
-        setIsMasterAdmin(decoded.email === 'admin@admin.com');
-      } catch (e) {}
-    }
-
+    setIsMasterAdmin(localStorage.getItem('userEmail') === 'admin@admin.com');
     fetch('http://localhost:3000/pesquisador/mensalidade')
       .then(r => r.json())
       .then(d => { setMensalidade(d.mensalidade); setNewMensalidade(d.mensalidade); })
@@ -87,23 +65,11 @@ function AdminPage() {
   const handleMakeAdmin = async (pesquisadorId, currentAdminStatus) => {
     const newAdminStatus = !currentAdminStatus;
     try {
-      let decodedToken;
-      const token = localStorage.getItem('accessToken');
-      try {
-        decodedToken = jwtDecode(token);
-      } catch (e) {
-        console.error('Invalid token format:', e);
-        localStorage.clear();
-        navigate('/');
-        return;
-      }
       const response = await fetch(`http://localhost:3000/pesquisador/${pesquisadorId}/admin`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ is_admin: newAdminStatus, user_id: decodedToken.id }),
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ is_admin: newAdminStatus }),
       });
 
       if (!response.ok) {
@@ -124,11 +90,12 @@ function AdminPage() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
+  const handleLogout = async () => {
+    await fetch('http://localhost:3000/auth/logout', { method: 'POST', credentials: 'include' });
+    localStorage.removeItem('userId');
+    localStorage.removeItem('isAdmin');
     localStorage.removeItem('userName');
-
+    localStorage.removeItem('userEmail');
     navigate('/');
   };
 
@@ -147,26 +114,13 @@ function AdminPage() {
     e.preventDefault();
     setError('');
     try {
-      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-
-      let decodedToken;
-      const token = localStorage.getItem('accessToken');
-      try {
-        decodedToken = jwtDecode(token);
-      } catch (e) {
-        console.error('Invalid token format:', e);
-        localStorage.clear();
-        navigate('/');
-        return;
-      }
-      const contributionData = { ...newContribution, data_pagamento: today, user_id: decodedToken.id };
+      const today = new Date().toISOString().split('T')[0];
+      const contributionData = { ...newContribution, data_pagamento: today };
 
       const response = await fetch(`http://localhost:3000/pesquisador/${currentPesquisadorIdForContribution}/contribuicao`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(contributionData),
       });
 
@@ -191,12 +145,11 @@ function AdminPage() {
   const handleMensalidadeSubmit = async (e) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('accessToken');
-      const decoded = jwtDecode(token);
       const response = await fetch('http://localhost:3000/pesquisador/mensalidade', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ valor: Number(newMensalidade), user_id: decoded.id }),
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ valor: Number(newMensalidade) }),
       });
       if (!response.ok) {
         const err = await response.json();

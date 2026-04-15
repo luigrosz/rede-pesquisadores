@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { jwtDecode } from 'jwt-decode';
 import './loginStyles.css';
 
 function LoginPage() {
@@ -14,54 +13,9 @@ function LoginPage() {
   const [forgotLoading, setForgotLoading] = useState(false);
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const token = localStorage.getItem('accessToken');
-      const refreshToken = localStorage.getItem('refreshToken');
-
-      if (!token) return;
-
-      let decoded;
-      try {
-        decoded = jwtDecode(token);
-      } catch (e) {
-        console.error('Invalid token format:', e);
-        localStorage.clear();
-        return;
-      }
-
-      const currentTime = Date.now() / 1000;
-      if (decoded.exp > currentTime) {
-        navigate('/main');
-        return;
-      }
-
-      if (refreshToken) {
-        try {
-          const response = await fetch('http://localhost:3000/auth/refresh-token', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ refreshToken }),
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            localStorage.setItem('accessToken', data.accessToken);
-            localStorage.setItem('refreshToken', data.refreshToken);
-            navigate('/main');
-          } else if (response.status === 401 || response.status === 403) {
-            localStorage.clear();
-          }
-        } catch (e) {
-          console.error('Network error during token refresh:', e);
-        }
-      } else {
-        localStorage.clear();
-      }
-    };
-
-    checkAuth();
+    if (localStorage.getItem('userId')) {
+      navigate('/main');
+    }
   }, [navigate]);
 
   const handleLogin = async (e) => {
@@ -84,11 +38,10 @@ function LoginPage() {
 
       const data = await response.json();
 
-      const { accessToken, refreshToken, nome } = data;
-
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('refreshToken', refreshToken);
-      localStorage.setItem('userName', nome);
+      localStorage.setItem('userId', data.id);
+      localStorage.setItem('isAdmin', data.isAdmin);
+      localStorage.setItem('userName', data.nome);
+      localStorage.setItem('userEmail', data.email);
 
       navigate('/main');
     } catch (err) {

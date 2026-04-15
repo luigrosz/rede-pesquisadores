@@ -1,30 +1,42 @@
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET;
+const cookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'strict',
+};
 
 const authMiddleware = (req, res, next) => {
-  const authHeader = req.header('Authorization');
+  const accessToken = req.cookies.accessToken;
+  const refreshToken = req.cookies.refreshToken;
 
-  if (!authHeader) {
-    return res.status(401).json({ message: 'Nenhum token recebido.' });
-  }
-
-  const token = authHeader.split(' ')[1];
-
-  if (!token) {
-    return res.status(401).json({ message: 'Formato de token invalido.' });
+  if (!accessToken && !refreshToken) {
+    return res.status(401).json({ message: 'Não autenticado.' });
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-
-    req.user = decoded;
+    req.user = jwt.verify(accessToken, process.env.JWT_SECRET);
     next();
   } catch (err) {
-    if (err.name === 'TokenExpiredError') {
-      return res.status(401).json({ message: 'Token expirado. Por favor, faça login novamente para obter um novo token de acesso.' });
+    if (err.name === 'TokenExpiredError' && refreshToken) {
+      try {
+        const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+        const newAccessToken = jwt.sign(
+          { id: decoded.id, email: decoded.email, isAdmin: decoded.isAdmin },
+          process.env.JWT_SECRET,
+          { expiresIn: '1h' }
+        );
+        res.cookie('accessToken', newAccessToken, { ...cookieOptions, maxAge: 60 * 60 * 1000 });
+        req.user = decoded;
+        next();
+      } catch {
+        res.clearCookie('accessToken');
+        res.clearCookie('refreshToken');
+        return res.status(401).json({ message: 'Sessão expirada. Por favor, faça login novamente.' });
+      }
+    } else {
+      return res.status(401).json({ message: 'Token inválido.' });
     }
-    res.status(401).json({ message: 'Token invalido.' });
   }
 };
 

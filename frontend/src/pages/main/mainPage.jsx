@@ -1,22 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { jwtDecode } from 'jwt-decode';
 import './mainStyles.css';
 
 function MainPage() {
   const navigate = useNavigate();
 
-  const token = localStorage.getItem('accessToken');
-  const isLoggedIn = !!token; // convert string to boolean (true if token exists)
+  const isLoggedIn = !!localStorage.getItem('userId');
   const [loggedInUserName] = useState(localStorage.getItem('userName') || '');
-  const isAdmin = isLoggedIn && (() => { try { return jwtDecode(token).isAdmin; } catch { return false; } })();
+  const isAdmin = localStorage.getItem('isAdmin') === 'true';
   const [subscriptionInfo, setSubscriptionInfo] = useState(null);
 
   useEffect(() => {
     if (!isLoggedIn) return;
     const fetchSubscription = async () => {
       try {
-        const { id, isAdmin } = jwtDecode(token);
+        const id = localStorage.getItem('userId');
         if (isAdmin) { setSubscriptionInfo({ isAdmin: true }); return; }
         const res = await fetch(`http://localhost:3000/pesquisador/${id}`);
         if (!res.ok) return;
@@ -27,7 +25,7 @@ function MainPage() {
       }
     };
     fetchSubscription();
-  }, [isLoggedIn, token]);
+  }, [isLoggedIn, isAdmin]);
 
   const getSubscriptionLabel = () => {
     if (!subscriptionInfo) return null;
@@ -210,6 +208,7 @@ function MainPage() {
       const response = await fetch('http://localhost:3000/mail/send-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(emailData),
       });
 
@@ -228,11 +227,13 @@ function MainPage() {
     }
   };
 
-  const handleAuthAction = () => {
+  const handleAuthAction = async () => {
     if (isLoggedIn) {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
+      await fetch('http://localhost:3000/auth/logout', { method: 'POST', credentials: 'include' });
+      localStorage.removeItem('userId');
+      localStorage.removeItem('isAdmin');
       localStorage.removeItem('userName');
+      localStorage.removeItem('userEmail');
       window.location.reload();
     } else {
       navigate('/');

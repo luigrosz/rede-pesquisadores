@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { jwtDecode } from "jwt-decode";
 import api from '../../services/api';
 import './ProfilePage.css';
 
@@ -8,11 +7,10 @@ function ProfilePage() {
   const navigate = useNavigate();
   const { userId } = useParams();
 
-  const token = localStorage.getItem('accessToken');
-  const isUserLoggedIn = !!token;
+  const isUserLoggedIn = !!localStorage.getItem('userId');
+  const loggedUserId = Number(localStorage.getItem('userId'));
 
   const [isEditing, setIsEditing] = useState(false);
-  const [loggedUserId, setLoggedUserId] = useState(null);
 
   let canEdit = loggedUserId === Number(userId);
 
@@ -92,47 +90,6 @@ function ProfilePage() {
       }
     };
 
-    const checkAuth = async () => {
-      const token = localStorage.getItem('accessToken');
-      const refreshToken = localStorage.getItem('refreshToken');
-
-      if (!token) return;
-
-      let decoded;
-      try {
-        decoded = jwtDecode(token);
-        setLoggedUserId(decoded.id);
-      } catch (e) {
-        console.error('Invalid token format:', e);
-        localStorage.clear();
-        return;
-      }
-
-      if (refreshToken) {
-        try {
-          const response = await fetch('http://localhost:3000/auth/refresh-token', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ refreshToken }),
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            localStorage.setItem('accessToken', data.accessToken);
-            localStorage.setItem('refreshToken', data.refreshToken);
-          } else if (response.status === 401 || response.status === 403) {
-            localStorage.clear();
-            navigate('/');
-          }
-        } catch (e) {
-          console.error('Network error during token refresh:', e);
-        }
-      }
-    };
-
-    checkAuth();
     fetchUserData();
   }, [userId, navigate]);
 
