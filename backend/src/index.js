@@ -37,5 +37,5 @@ app.use('/auth', auth);
 app.use('/mail', mail);
 
 app.listen(port, () => {
-  console.log(`Express server listening at http://localhost:${port}`);
+  console.log(`Express server listening at http://localhost`);
 });

@@ -173,4 +173,11 @@ CREATE TABLE "password_reset_tokens"(
     FOREIGN KEY("id_pesquisador") REFERENCES "pesquisador"("id_pesquisador") ON DELETE CASCADE
 );
 
+CREATE TABLE "configuracao"(
+    "chave" VARCHAR(100) NOT NULL PRIMARY KEY,
+    "valor" TEXT NOT NULL
+);
+
+INSERT INTO "configuracao" ("chave", "valor") VALUES ('mensalidade', '100');
+
 CREATE EXTENSION unaccent;

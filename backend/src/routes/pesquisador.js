@@ -590,6 +590,8 @@ router.post('/:id/contribuicao', async (req, res) => {
 });
 
 router.patch('/:id/admin', async (req, res) => {
+  if (!req.user.isAdmin) return res.status(403).json({ error: 'Acesso negado.' });
+
   const { id } = req.params;
   const { is_admin } = req.body;
 
