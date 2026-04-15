@@ -4,9 +4,9 @@ services:
       context: ./frontend
       network: host
       args:
-        VITE_API_URL: ${API_URL:-http://localhost:3000}
+        VITE_API_URL: https://conectafarmaco.lgrz.xyz
     ports:
-      - "80:80"
+      - "12862:80"
     restart: always
     depends_on:
       projeto-farmacia-backend:

@@ -1,7 +1,7 @@
 .registration-container {
   display: flex;
   justify-content: center;
-  padding: 20px;
+  padding: 0px;
   background-color: #f0f2f5;
 }
 
@@ -12,6 +12,7 @@
   padding: 20px;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  margin: 30px;
 }
 
 .registration-header h1 {
@@ -236,6 +237,7 @@ legend {
   .registration-form-card {
     padding: 40px;
     width: 100%;
+    height: 100vh;
   }
 
   fieldset {
