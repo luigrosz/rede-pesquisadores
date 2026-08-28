@@ -43,10 +43,11 @@ router.post('/', registrationLimiter, async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    await client.query('SELECT pg_advisory_xact_lock($1)', [874239]);
 
     const {
       nome, email, password, celular, link_lattes, localidade_data,
-      pagina_institucional, pq, is_admin, editor_revista, laboratorio,
+      pagina_institucional, pq, editor_revista, laboratorio,
       area_doutorado_data, sbfte, vinculos_data, grupos_pesquisa_data,
       areas_pesquisa, disciplinas, publicacoes, redes_sociais,
       revistas_editadas, pos_graduacoes, org_sociedades,
@@ -85,6 +86,9 @@ router.post('/', registrationLimiter, async (req, res) => {
       return res.status(400).json({ error: 'O Link Lattes deve começar com http://lattes.cnpq.br/' });
     }
 
+    const userCount = await client.query('SELECT COUNT(*)::integer AS count FROM "pesquisador"');
+    let isFirstUser = userCount.rows[0].count === 0;
+
     const localidade_id = await findOrCreateLocalidade(client, localidade_data);
     const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -92,8 +96,8 @@ router.post('/', registrationLimiter, async (req, res) => {
       INSERT INTO "pesquisador" (
         nome, link_lattes, email, password, celular, localidade,
         pagina_institucional, pq, is_admin, editor_revista,
-        laboratorio, sbfte, is_enabled, area_doutorado
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+        laboratorio, sbfte, is_enabled, is_master_admin, area_doutorado
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
       RETURNING id_pesquisador;
     `;
     const pesquisadorResult = await client.query(pesquisadorInsertQuery, [
@@ -105,11 +109,12 @@ router.post('/', registrationLimiter, async (req, res) => {
       localidade_id,
       pagina_institucional,
       pq,
-      is_admin,
+      isFirstUser,
       editor_revista,
       laboratorio,
       sbfte,
-      false,
+      isFirstUser,
+      isFirstUser,
       null
     ]);
     const id_pesquisador = pesquisadorResult.rows[0].id_pesquisador;
@@ -263,7 +268,7 @@ async function executePesquisadorSearch(searchParams) {
     `;
 
     // O master admin nunca aparece em buscas
-    const conditions = [`p.email != 'admin@admin.com'`];
+    const conditions = [`p.is_master_admin = FALSE`];
     const params = [];
     let paramIndex = 1;
 
