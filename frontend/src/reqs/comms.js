@@ -3,6 +3,7 @@ export const postRoute = async (payload) => await fetch(`${import.meta.env.VITE_
   headers: {
     'Content-Type': 'application/json',
   },
+  credentials: 'include',
   body: JSON.stringify(payload),
 });
 

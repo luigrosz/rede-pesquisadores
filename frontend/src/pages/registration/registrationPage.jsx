@@ -85,9 +85,14 @@ function RegistrationPage() {
       const data = await response.json();
 
       if (response.ok) {
+        localStorage.setItem('userId', data.id || data.id_pesquisador);
+        localStorage.setItem('isAdmin', String(data.isAdmin ?? false));
+        localStorage.setItem('isMasterAdmin', String(data.isMasterAdmin ?? false));
+        localStorage.setItem('userName', data.nome || formData.nome);
+        localStorage.setItem('userEmail', data.email || formData.email);
         navigate(`/register/step2/${data.id_pesquisador}`);
       } else {
-        alert(`Erro no cadastro: ${data.error || data.details}`);
+        alert(`Erro no cadastro: ${data.error || data.details || data.message || 'Erro desconhecido.'}`);
       }
     } catch (error) {
       console.error("Erro ao enviar dados do cadastro:", error);

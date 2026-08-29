@@ -4,9 +4,10 @@ import bcrypt from 'bcrypt';
 import winston from 'winston';
 import rateLimit from 'express-rate-limit';
 
-import { findOrCreateAreaDoutorado, findOrCreateGrupoPesquisa, findOrCreateLocalidade, findOrCreateInstituicao } from '../helper/pesquisador.js';
+import { findOrCreateGrupoPesquisa, findOrCreateLocalidade, findOrCreateInstituicao } from '../helper/pesquisador.js';
 import authMiddleware from '../middleware/authMiddleware.js';
 import optionalAuthMiddleware from '../middleware/optionalAuthMiddleware.js';
+import { setAuthCookies } from '../helper/auth.js';
 
 const registrationLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
@@ -221,7 +222,21 @@ router.post('/', registrationLimiter, async (req, res) => {
     }
 
     await client.query('COMMIT');
-    res.status(201).json({ message: 'Pesquisador e dados relacionados cadastrados com sucesso!', id_pesquisador });
+    setAuthCookies(res, {
+      id_pesquisador,
+      email,
+      is_admin: isFirstUser,
+      is_master_admin: isFirstUser,
+    });
+    res.status(201).json({
+      message: 'Pesquisador e dados relacionados cadastrados com sucesso!',
+      id_pesquisador,
+      id: id_pesquisador,
+      nome,
+      email,
+      isAdmin: isFirstUser,
+      isMasterAdmin: isFirstUser,
+    });
 
   } catch (err) {
     await client.query('ROLLBACK');
@@ -240,7 +255,6 @@ async function executePesquisadorSearch(searchParams) {
       estado,
       area,
       sociedade,
-      area_doutorado,
       programa_de_pos,
       disciplina,
       pesquisador_pq,
@@ -257,12 +271,10 @@ async function executePesquisadorSearch(searchParams) {
              CASE WHEN p.enabled_until IS NOT NULL AND p.enabled_until > NOW() THEN TRUE ELSE FALSE END AS is_enabled,
              p.enabled_until,
              l.nome_cidade, l.nome_estado,
-             ad.titulo AS area_doutorado_titulo,
              i.nome AS nome_instituicao,
              v.nome_programa
       FROM "pesquisador" p
       LEFT JOIN "localidade" l ON p.localidade = l.id_localidade
-      LEFT JOIN "area_doutorado" ad ON p.area_doutorado = ad.id_doutorado
       LEFT JOIN "vinculo" v ON p.id_pesquisador = v.id_pesquisador AND v.tipo = 'primaria'
       LEFT JOIN "instituicao" i ON v.instituicao = i.id
     `;
@@ -284,7 +296,6 @@ async function executePesquisadorSearch(searchParams) {
     if (estado) { conditions.push(`unaccent(l.nome_estado) ILIKE unaccent($${paramIndex++})`); params.push(`%${estado}%`); }
     if (area) { conditions.push(`unaccent(ap.descricao) ILIKE unaccent($${paramIndex++})`); params.push(`%${area}%`); }
     if (sociedade) { conditions.push(`unaccent(os.nome) ILIKE unaccent($${paramIndex++})`); params.push(`%${sociedade}%`); }
-    if (area_doutorado) { conditions.push(`unaccent(ad.titulo) ILIKE unaccent($${paramIndex++})`); params.push(`%${area_doutorado}%`); }
     if (programa_de_pos) { conditions.push(`unaccent(pg.titulo) ILIKE unaccent($${paramIndex++})`); params.push(`%${programa_de_pos}%`); }
     if (disciplina) { conditions.push(`unaccent(d.descricao) ILIKE unaccent($${paramIndex++})`); params.push(`%${disciplina}%`); }
     if (pesquisador_pq !== undefined) { conditions.push(`p.pq = $${paramIndex++}`); params.push(pesquisador_pq === true || pesquisador_pq === 'true'); }

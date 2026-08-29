@@ -10,7 +10,6 @@ function RegistrationPage2() {
 
   const [formData, setFormData] = useState({
     laboratorio: '',
-    area_doutorado: { titulo: '', instituicao_nome: '' },
     vinculos: [{ instituicao_nome: '', tipo: 'primaria', nome_programa: '' }],
     pos_graduacoes: [{ titulo: '', instituicao_nome: '' }],
     areas_pesquisa: [''],
@@ -34,17 +33,6 @@ function RegistrationPage2() {
       list[index] = value;
     }
     setFormData(prev => ({ ...prev, [listName]: list }));
-  };
-
-  const handleAreaDoutoradoChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      area_doutorado: {
-        ...prev.area_doutorado,
-        [name]: value,
-      },
-    }));
   };
 
   const handleVinculoChange = (index, e) => {
@@ -100,7 +88,7 @@ function RegistrationPage2() {
       if (response.ok) {
         navigate(`/register/step3/${id}`);
       } else {
-        alert(`Erro ao salvar: ${data.error || data.details}`);
+        alert(`Erro ao salvar: ${data.error || data.details || data.message || 'Erro desconhecido.'}`);
       }
     } catch (error) {
       console.error("Erro ao enviar dados:", error);
@@ -130,9 +118,9 @@ function RegistrationPage2() {
           Sua conta foi criada! Agora você pode adicionar suas informações acadêmicas. Todas as informações desta etapa são opcionais.
         </p>
 
-        {/* Laboratório e Doutorado */}
+        {/* Laboratório */}
         <fieldset>
-          <legend>Formação e Laboratório</legend>
+          <legend>Laboratório</legend>
           <div className="form-group">
             <label>Laboratório de Pesquisa</label>
             <input
@@ -140,24 +128,6 @@ function RegistrationPage2() {
               value={formData.laboratorio}
               onChange={handleSimpleChange}
               placeholder="Ex: Laboratório de Farmacologia"
-            />
-          </div>
-          <div className="form-group">
-            <label>Título do Doutorado</label>
-            <input
-              name="titulo"
-              value={formData.area_doutorado.titulo}
-              onChange={handleAreaDoutoradoChange}
-              placeholder="Ex: Farmacologia Clínica"
-            />
-          </div>
-          <div className="form-group">
-            <label>Instituição do Doutorado</label>
-            <input
-              name="instituicao_nome"
-              value={formData.area_doutorado.instituicao_nome}
-              onChange={handleAreaDoutoradoChange}
-              placeholder="Ex: Universidade Federal do Mato Grosso"
             />
           </div>
         </fieldset>

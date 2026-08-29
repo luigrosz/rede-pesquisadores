@@ -55,7 +55,6 @@ function MainPage() {
   const [areaFilter, setAreaFilter] = useState('');
   const [isSBFTEChecked, setIsSBFTEChecked] = useState(false);
   const [societyText, setSocietyText] = useState('');
-  const [drAreaFilter, setDrAreaFilter] = useState('');
   const [postgradProgramFilter, setPostgradProgramFilter] = useState('');
   const [disciplineFilter, setDisciplineFilter] = useState('');
   const [isPesquisadorPQFilter, setIsPesquisadorPQFilter] = useState(false);
@@ -72,7 +71,6 @@ function MainPage() {
   const handleAreaChange = (event) => setAreaFilter(event.target.value);
   const handleSBFTEChange = (event) => setIsSBFTEChecked(event.target.checked);
   const handleSocietyTextChange = (event) => setSocietyText(event.target.value);
-  const handleDrAreaChange = (event) => setDrAreaFilter(event.target.value);
   const handlePostgradProgramChange = (event) => setPostgradProgramFilter(event.target.value);
   const handleDisciplineChange = (event) => setDisciplineFilter(event.target.value);
   const handlePesquisadorPQChange = (event) => setIsPesquisadorPQFilter(event.target.checked);
@@ -88,7 +86,6 @@ function MainPage() {
     setInstitutionFilter('');
     setStateFilter('');
     setAreaFilter('');
-    setDrAreaFilter('');
     setPostgradProgramFilter('');
     setDisciplineFilter('');
     setSocietyText('');
@@ -114,7 +111,6 @@ function MainPage() {
       if (activeTab === 'pesquisadores') {
         if (areaFilter) searchBody.area = areaFilter;
         if (societyText) searchBody.sociedade = societyText;
-        if (drAreaFilter) searchBody.area_doutorado = drAreaFilter;
         if (postgradProgramFilter) searchBody.programa_de_pos = postgradProgramFilter;
         if (disciplineFilter) searchBody.disciplina = disciplineFilter;
         if (isPesquisadorPQFilter) searchBody.pesquisador_pq = true;
@@ -329,10 +325,6 @@ function MainPage() {
                     <input id="areaFilter" type="text" value={areaFilter} onChange={handleAreaChange} />
                   </div>
                   <div className="filter-item">
-                    <label htmlFor="drAreaFilter">Área de Doutorado:</label>
-                    <input id="drAreaFilter" type="text" value={drAreaFilter} onChange={handleDrAreaChange} />
-                  </div>
-                  <div className="filter-item">
                     <label htmlFor="postgradProgramFilter">Programa de Pós:</label>
                     <input id="postgradProgramFilter" type="text" value={postgradProgramFilter} onChange={handlePostgradProgramChange} />
                   </div>
@@ -403,7 +395,6 @@ function MainPage() {
 
               {isLoggedIn && (
                 <>
-                  <p><strong>Área de Doutorado:</strong> {pesquisador.area_doutorado_titulo || 'N/A'}</p>
                   {pesquisador.disciplina_titulo && <p><strong>Disciplina:</strong> {pesquisador.disciplina_titulo}</p>}
                   {pesquisador.programa_de_pos_titulo && <p><strong>Programa de Pós:</strong> {pesquisador.programa_de_pos_titulo}</p>}
                 </>

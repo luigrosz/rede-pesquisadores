@@ -101,7 +101,7 @@ function RegistrationPage3() {
         alert('Cadastro concluído com sucesso!');
         navigate('/');
       } else {
-        alert(`Erro ao salvar: ${data.error || data.details}`);
+        alert(`Erro ao salvar: ${data.error || data.details || data.message || 'Erro desconhecido.'}`);
       }
     } catch (error) {
       console.error("Erro ao enviar dados:", error);

@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
 import pool from '../db/pool.js';
+import { setAuthCookies } from '../helper/auth.js';
 
 const transporter = nodemailer.createTransport({
   service: 'Gmail',
@@ -47,13 +48,7 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Credenciais invalidas.' });
     }
 
-    const payload = { id: user.id_pesquisador, email: user.email, isAdmin: user.is_admin, isMasterAdmin: user.is_master_admin };
-
-    const accessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' });
-    const refreshToken = jwt.sign(payload, JWT_REFRESH_SECRET, { expiresIn: '7d' });
-
-    res.cookie('accessToken', accessToken, { ...cookieOptions, maxAge: 60 * 60 * 1000 });
-    res.cookie('refreshToken', refreshToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 });
+    setAuthCookies(res, user);
 
     return res.status(200).json({
       message: 'Sucesso',
