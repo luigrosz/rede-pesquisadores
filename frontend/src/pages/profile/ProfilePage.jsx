@@ -328,7 +328,7 @@ function ProfilePage() {
                   <div className="form-group">
                     <label>Nome da Instituição:</label>
                     {isEditing ? (
-                      <input type="text" value={pg.instituicao_nome} onChange={(e) => handleChangePosGraduacao(index, 'instituicao_name', e.target.value)} />
+                      <input type="text" value={pg.instituicao_nome} onChange={(e) => handleChangePosGraduacao(index, 'instituicao_nome', e.target.value)} />
                     ) : (
                       <p className="read-only-field">{pg.instituicao_nome || 'Não informado'}</p>
                     )}
