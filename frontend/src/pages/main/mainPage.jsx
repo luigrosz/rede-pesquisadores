@@ -239,12 +239,23 @@ function MainPage() {
 
   return (
     <div className="main-page-container">
-      <button
-        onClick={handleAuthAction}
-        className={isLoggedIn ? "logout-button-fixed" : "login-button-fixed"}
-      >
-        {isLoggedIn ? "Sair" : "Entrar"}
-      </button>
+      {isLoggedIn ? (
+        <div className="main-auth-actions">
+          <button
+            onClick={() => navigate(`/profile/${localStorage.getItem('userId')}`)}
+            className="profile-button-fixed"
+          >
+            Meu Perfil
+          </button>
+          <button onClick={handleAuthAction} className="logout-button-fixed">
+            Sair
+          </button>
+        </div>
+      ) : (
+        <button onClick={handleAuthAction} className="login-button-fixed">
+          Entrar
+        </button>
+      )}
       <div className="main-page-header">
         <h1>Busca de Pesquisadores</h1>
         {isLoggedIn && getSubscriptionLabel() && (

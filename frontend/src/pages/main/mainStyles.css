@@ -156,3 +156,48 @@
 .researcher-card button:hover {
   background-color: #0056b3;
 }
+
+.main-auth-actions {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 1000;
+  display: flex;
+  gap: 8px;
+}
+
+.main-auth-actions button {
+  position: static;
+}
+
+.profile-button-fixed {
+  background-color: #0056b3;
+  color: white;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: opacity 0.2s;
+}
+
+.profile-button-fixed:hover {
+  opacity: 0.85;
+}
+
+.main-auth-actions .logout-button-fixed {
+  position: static;
+}
+
+@media (max-width: 480px) {
+  .main-auth-actions {
+    right: 10px;
+    gap: 5px;
+  }
+
+  .main-auth-actions button {
+    padding: 8px 10px;
+    font-size: 0.8rem;
+  }
+}
