@@ -26,6 +26,7 @@ function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
+  const [saveError, setSaveError] = useState('');
 
   const estadosBrasileiros = [
     'Acre', 'Alagoas', 'Amapá', 'Amazonas', 'Bahia', 'Ceará', 'Distrito Federal',
@@ -97,6 +98,7 @@ function ProfilePage() {
     e.preventDefault();
     setIsEditing(!isEditing);
     setSuccessMessage('');
+    setSaveError('');
   };
 
   const handleChange = (e) => {
@@ -157,6 +159,25 @@ function ProfilePage() {
     if (!canEdit) return;
 
     try {
+      setSaveError('');
+
+      const hasSomeValue = (item, fields) => fields.some(field => item[field]?.trim());
+      const hasMissingValue = (item, fields) => hasSomeValue(item, fields) && fields.some(field => !item[field]?.trim());
+      const incompleteSections = [];
+
+      if (userData.pos_graduacoes.some(pg => hasMissingValue(pg, ['titulo', 'instituicao_nome']))) incompleteSections.push('Pós-Graduações');
+      if (userData.publicacoes.some(pub => hasMissingValue(pub, ['doi', 'titulo']))) incompleteSections.push('Publicações');
+      if (userData.redes_sociais.some(rede => hasMissingValue(rede, ['plataforma', 'url']))) incompleteSections.push('Redes Sociais');
+      if (userData.vinculos.some(vinculo => hasMissingValue(vinculo, ['instituicao_nome', 'tipo', 'nome_programa']))) incompleteSections.push('Vínculos Institucionais');
+      if (userData.grupos_pesquisa.some(grupo => hasMissingValue(grupo, ['nome', 'descricao', 'instituicao_nome', 'link']))) incompleteSections.push('Grupos de Pesquisa');
+      if (userData.servicos.some(servico => hasMissingValue(servico, ['nome', 'cidade', 'estado']))) incompleteSections.push('Serviços');
+      if (userData.equipamentos.some(equipamento => hasMissingValue(equipamento, ['nome', 'cidade', 'estado']))) incompleteSections.push('Equipamentos');
+
+      if (incompleteSections.length > 0) {
+        setSaveError(`Preencha todos os campos das seções: ${incompleteSections.join(', ')}.`);
+        return;
+      }
+
       const payload = {
         nome: userData.name,
         email: userData.email,
@@ -168,12 +189,12 @@ function ProfilePage() {
         pq: userData.pq,
         sbfte: userData.sbfte,
         editor_revista: userData.editor_revista,
-        pos_graduacoes: userData.pos_graduacoes.filter(pg => pg.titulo !== '' || pg.instituicao_nome !== ''),
-        publicacoes: userData.publicacoes.filter(pub => pub.doi !== '' || pub.titulo !== ''),
-        redes_sociais: userData.redes_sociais.filter(rede => rede.plataforma !== '' || rede.url !== ''),
+        pos_graduacoes: userData.pos_graduacoes.filter(pg => pg.titulo !== '' && pg.instituicao_nome !== ''),
+        publicacoes: userData.publicacoes.filter(pub => pub.doi !== '' && pub.titulo !== ''),
+        redes_sociais: userData.redes_sociais.filter(rede => rede.plataforma !== '' && rede.url !== ''),
         areas_pesquisa: userData.areas_pesquisa.filter(area => area.descricao !== ''),
-        vinculos: userData.vinculos.filter(vin => vin.instituicao_nome !== '' || vin.tipo !== '' || vin.nome_programa !== ''),
-        grupos_pesquisa: userData.grupos_pesquisa.filter(grupo => grupo.nome !== '' || grupo.descricao !== '' || grupo.instituicao_nome !== '' || grupo.link !== ''),
+        vinculos: userData.vinculos.filter(vin => vin.instituicao_nome !== '' && vin.tipo !== '' && vin.nome_programa !== ''),
+        grupos_pesquisa: userData.grupos_pesquisa.filter(grupo => grupo.nome !== '' && grupo.descricao !== '' && grupo.instituicao_nome !== '' && grupo.link !== ''),
         org_sociedades: userData.org_sociedades.filter(org => org.nome !== ''),
         disciplinas: userData.disciplinas.filter(disc => disc.nome !== '' || disc.descricao !== ''),
         servicos: userData.servicos.filter(serv =>
@@ -184,11 +205,13 @@ function ProfilePage() {
         ),
       };
 
-      const response = await api.put(`/pesquisador/${loggedUserId}`, payload);
-      setSuccessMessage('Profile updated successfully!');
+      await api.put(`/pesquisador/${loggedUserId}`, payload);
+      setSuccessMessage('Perfil atualizado com sucesso!');
+      setSaveError('');
       setIsEditing(false);
     } catch (err) {
-      setError('Failed to update profile.');
+      const message = err.response?.data?.error || err.response?.data?.message || 'Não foi possível atualizar o perfil.';
+      setSaveError(message);
       console.error('Error updating profile:', err.response ? err.response.data : err.message);
     }
   };
@@ -224,6 +247,7 @@ function ProfilePage() {
         )}
       </div>
       {successMessage && <div className="success-message">{successMessage}</div>}
+      {saveError && <div className="error-message">{saveError}</div>}
       <form onSubmit={handleSubmit} className="profile-form">
 
         {/* --- Informacoes Pessoais --- */}
