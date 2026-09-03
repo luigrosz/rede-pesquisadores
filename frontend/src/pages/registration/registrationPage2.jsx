@@ -60,7 +60,12 @@ function RegistrationPage2() {
     navigate(`/register/step3/${id}`);
   };
 
-  const handleFinish = () => {
+  const handleFinish = async () => {
+    localStorage.removeItem('registrationUserId');
+    await fetch(`${import.meta.env.VITE_API_URL}/auth/logout`, {
+      method: 'POST',
+      credentials: 'include',
+    });
     alert('Cadastro concluído! Você pode completar seu perfil a qualquer momento.');
     navigate('/');
   };

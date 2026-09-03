@@ -69,7 +69,17 @@ function RegistrationPage3() {
     setFormData(prev => ({ ...prev, [listName]: list }));
   };
 
+  const finishRegistration = () => {
+    localStorage.removeItem('registrationUserId');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('isAdmin');
+    localStorage.removeItem('isMasterAdmin');
+    localStorage.removeItem('userName');
+    localStorage.removeItem('userEmail');
+  };
+
   const handleFinish = () => {
+    finishRegistration();
     alert('Cadastro concluído! Você pode completar seu perfil a qualquer momento.');
     navigate('/');
   };
@@ -98,6 +108,11 @@ function RegistrationPage3() {
       const data = await response.json();
 
       if (response.ok) {
+        finishRegistration();
+        await fetch(`${import.meta.env.VITE_API_URL}/auth/logout`, {
+          method: 'POST',
+          credentials: 'include',
+        });
         alert('Cadastro concluído com sucesso!');
         navigate('/');
       } else {

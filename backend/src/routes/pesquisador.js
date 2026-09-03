@@ -6,8 +6,9 @@ import rateLimit from 'express-rate-limit';
 
 import { findOrCreateGrupoPesquisa, findOrCreateLocalidade, findOrCreateInstituicao } from '../helper/pesquisador.js';
 import authMiddleware from '../middleware/authMiddleware.js';
+import registrationOrAuthMiddleware from '../middleware/registrationOrAuthMiddleware.js';
 import optionalAuthMiddleware from '../middleware/optionalAuthMiddleware.js';
-import { setAuthCookies } from '../helper/auth.js';
+import { setAuthCookies, setRegistrationCookie } from '../helper/auth.js';
 
 const registrationLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
@@ -222,12 +223,16 @@ router.post('/', registrationLimiter, async (req, res) => {
     }
 
     await client.query('COMMIT');
-    setAuthCookies(res, {
-      id_pesquisador,
-      email,
-      is_admin: isFirstUser,
-      is_master_admin: isFirstUser,
-    });
+    if (isFirstUser) {
+      setAuthCookies(res, {
+        id_pesquisador,
+        email,
+        is_admin: true,
+        is_master_admin: true,
+      });
+    } else {
+      setRegistrationCookie(res, { id_pesquisador, email });
+    }
     res.status(201).json({
       message: 'Pesquisador e dados relacionados cadastrados com sucesso!',
       id_pesquisador,
@@ -236,6 +241,7 @@ router.post('/', registrationLimiter, async (req, res) => {
       email,
       isAdmin: isFirstUser,
       isMasterAdmin: isFirstUser,
+      registrationOnly: !isFirstUser,
     });
 
   } catch (err) {
@@ -452,7 +458,7 @@ router.get('/:id', optionalAuthMiddleware, async (req, res) => {
   }
 });
 
-router.put('/:id', authMiddleware, async (req, res) => {
+router.put('/:id', registrationOrAuthMiddleware, async (req, res) => {
   const { id } = req.params;
 
   if (req.user.id !== parseInt(id) && !req.user.isAdmin) {

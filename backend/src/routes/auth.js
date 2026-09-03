@@ -4,7 +4,8 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
 import pool from '../db/pool.js';
-import { setAuthCookies } from '../helper/auth.js';
+import { clearAuthCookies, clearRegistrationCookie, setAuthCookies } from '../helper/auth.js';
+import { getEnabledUser } from '../middleware/authMiddleware.js';
 
 const transporter = nodemailer.createTransport({
   service: 'Gmail',
@@ -74,7 +75,19 @@ router.post('/refresh-token', async (req, res) => {
 
   try {
     const decoded = jwt.verify(refreshToken, JWT_REFRESH_SECRET);
-    const payload = { id: decoded.id, email: decoded.email, isAdmin: decoded.isAdmin };
+    const user = await getEnabledUser(decoded.id);
+    if (!user) {
+      res.clearCookie('accessToken', cookieOptions);
+      res.clearCookie('refreshToken', cookieOptions);
+      return res.status(403).json({ error: 'Sua conta ainda nao foi aprovada por um administrador.' });
+    }
+
+    const payload = {
+      id: user.id_pesquisador,
+      email: user.email,
+      isAdmin: user.is_admin,
+      isMasterAdmin: user.is_master_admin,
+    };
 
     const newAccessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' });
     const newRefreshToken = jwt.sign(payload, JWT_REFRESH_SECRET, { expiresIn: '7d' });
@@ -85,8 +98,7 @@ router.post('/refresh-token', async (req, res) => {
     res.json({ message: 'Token renovado com sucesso!' });
 
   } catch (err) {
-    res.clearCookie('accessToken');
-    res.clearCookie('refreshToken');
+    clearAuthCookies(res);
     if (err.name === 'TokenExpiredError') {
       return res.status(401).json({ error: 'Sessão expirada. Por favor, faça login novamente.' });
     }
@@ -95,8 +107,9 @@ router.post('/refresh-token', async (req, res) => {
 });
 
 router.post('/logout', (req, res) => {
-  res.clearCookie('accessToken');
-  res.clearCookie('refreshToken');
+  res.clearCookie('accessToken', cookieOptions);
+  res.clearCookie('refreshToken', cookieOptions);
+  clearRegistrationCookie(res);
   res.json({ message: 'Logout realizado com sucesso.' });
 });
 

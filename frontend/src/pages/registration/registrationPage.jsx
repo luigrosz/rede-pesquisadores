@@ -85,11 +85,23 @@ function RegistrationPage() {
       const data = await response.json();
 
       if (response.ok) {
-        localStorage.setItem('userId', data.id || data.id_pesquisador);
-        localStorage.setItem('isAdmin', String(data.isAdmin ?? false));
-        localStorage.setItem('isMasterAdmin', String(data.isMasterAdmin ?? false));
-        localStorage.setItem('userName', data.nome || formData.nome);
-        localStorage.setItem('userEmail', data.email || formData.email);
+        const userId = data.id || data.id_pesquisador;
+        localStorage.removeItem('userId');
+        localStorage.removeItem('isAdmin');
+        localStorage.removeItem('isMasterAdmin');
+        localStorage.removeItem('userName');
+        localStorage.removeItem('userEmail');
+
+        if (data.registrationOnly) {
+          localStorage.setItem('registrationUserId', String(userId));
+        } else {
+          localStorage.removeItem('registrationUserId');
+          localStorage.setItem('userId', userId);
+          localStorage.setItem('isAdmin', String(data.isAdmin ?? false));
+          localStorage.setItem('isMasterAdmin', String(data.isMasterAdmin ?? false));
+          localStorage.setItem('userName', data.nome || formData.nome);
+          localStorage.setItem('userEmail', data.email || formData.email);
+        }
         navigate(`/register/step2/${data.id_pesquisador}`);
       } else {
         alert(`Erro no cadastro: ${data.error || data.details || data.message || 'Erro desconhecido.'}`);
