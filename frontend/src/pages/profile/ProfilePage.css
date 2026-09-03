@@ -376,19 +376,30 @@ a.link-field:hover {
 }
 
 /* === FIXED BUTTONS === */
-.logout-button-fixed,
-.login-button-fixed {
+.profile-navigation-actions {
   position: fixed;
   top: 16px;
   right: 16px;
+  display: flex;
+  gap: 8px;
+  z-index: 100;
+}
+
+.back-to-search-button,
+.logout-button-fixed,
+.login-button-fixed {
   padding: 8px 18px;
   border: none;
   border-radius: 6px;
   font-weight: 600;
   font-size: 0.9rem;
   cursor: pointer;
-  z-index: 100;
   transition: opacity 0.2s;
+}
+
+.back-to-search-button {
+  color: #0056b3;
+  background-color: #e7f1ff;
 }
 
 .logout-button-fixed {
@@ -401,9 +412,25 @@ a.link-field:hover {
   color: white;
 }
 
+.back-to-search-button:hover,
 .logout-button-fixed:hover,
 .login-button-fixed:hover {
   opacity: 0.85;
+}
+
+@media (max-width: 520px) {
+  .profile-navigation-actions {
+    left: 16px;
+    right: 16px;
+    justify-content: flex-end;
+  }
+
+  .back-to-search-button,
+  .logout-button-fixed,
+  .login-button-fixed {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+  }
 }
 
 /* === LEGACY FIELDSET === */

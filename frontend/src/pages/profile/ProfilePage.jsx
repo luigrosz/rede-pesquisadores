@@ -219,20 +219,42 @@ function ProfilePage() {
   if (loading) return <div>Carregando perfil...</div>;
   if (error) return <div className="error-message">{error}</div>;
 
-  const handleAuthAction = () => {
-    if (isUserLoggedIn) {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('userName');
+  const clearUserSession = () => {
+    localStorage.removeItem('userId');
+    localStorage.removeItem('isAdmin');
+    localStorage.removeItem('isMasterAdmin');
+    localStorage.removeItem('userName');
+    localStorage.removeItem('userEmail');
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch(`${import.meta.env.VITE_API_URL}/auth/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } finally {
+      clearUserSession();
+      navigate('/');
     }
-    navigate('/');
   };
 
   return (
     <div className="profile-page-container">
-      <button onClick={handleAuthAction} className={isUserLoggedIn ? "logout-button-fixed" : "login-button-fixed"}>
-        {isUserLoggedIn ? "Sair" : "Entrar"}
-      </button>
+      <div className="profile-navigation-actions">
+        <button onClick={() => navigate('/main')} className="back-to-search-button">
+          Voltar à busca
+        </button>
+        {isUserLoggedIn ? (
+          <button onClick={handleLogout} className="logout-button-fixed">
+            Sair
+          </button>
+        ) : (
+          <button onClick={() => navigate('/')} className="login-button-fixed">
+            Entrar
+          </button>
+        )}
+      </div>
 
       <div className="profile-header">
         <h1 className="profile-title">{userData.name || 'Perfil do Pesquisador'}</h1>
