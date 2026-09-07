@@ -8,7 +8,7 @@ const cookieOptions = {
 
 const registrationCookieOptions = {
   ...cookieOptions,
-  path: '/pesquisador',
+  path: '/',
 };
 
 export function clearAuthCookies(res) {
