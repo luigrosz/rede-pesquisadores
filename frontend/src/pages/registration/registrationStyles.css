@@ -36,7 +36,7 @@
   color: #606770;
 }
 
-fieldset {
+.registration-container fieldset {
   min-width: 0;
   border: 1px solid #dddfe2;
   border-radius: 6px;
@@ -44,7 +44,7 @@ fieldset {
   margin: 0 0 20px;
 }
 
-legend {
+.registration-container legend {
   max-width: 100%;
   box-sizing: border-box;
   font-size: 1.2rem;
@@ -53,12 +53,12 @@ legend {
   padding: 0 8px;
 }
 
-.form-group {
+.registration-container .form-group {
   min-width: 0;
   margin-bottom: 16px;
 }
 
-.form-group label,
+.registration-container .form-group label,
 .dynamic-list-item-column > label {
   display: block;
   font-weight: 600;
@@ -66,9 +66,9 @@ legend {
   margin-bottom: 6px;
 }
 
-.form-group input,
-.form-group select,
-.form-group textarea,
+.registration-container .form-group input,
+.registration-container .form-group select,
+.registration-container .form-group textarea,
 .registration-form-card input,
 .registration-form-card select,
 .registration-form-card textarea {
@@ -89,18 +89,18 @@ legend {
   resize: vertical;
 }
 
-.checkbox-group {
+.registration-container .checkbox-group {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.checkbox-group input[type="checkbox"] {
+.registration-container .checkbox-group input[type="checkbox"] {
   width: auto;
   flex: 0 0 auto;
 }
 
-.checkbox-group label {
+.registration-container .checkbox-group label {
   min-width: 0;
   margin-bottom: 0;
 }
@@ -277,19 +277,19 @@ legend {
     padding: 40px;
   }
 
-  fieldset {
+  .registration-container fieldset {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 0 24px;
   }
 
-  legend,
+  .registration-container legend,
   .submit-btn,
   .registration-buttons {
     grid-column: 1 / -1;
   }
 
-  .form-group.full-width {
+  .registration-container .form-group.full-width {
     grid-column: 1 / -1;
   }
 
@@ -314,7 +314,7 @@ legend {
     border-radius: 6px;
   }
 
-  fieldset {
+  .registration-container fieldset {
     padding: 12px;
     margin-bottom: 14px;
   }

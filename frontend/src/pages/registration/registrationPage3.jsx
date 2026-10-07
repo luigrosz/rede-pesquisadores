@@ -93,13 +93,14 @@ function RegistrationPage3() {
       pq: formData.pq,
       sbfte: formData.sbfte,
       editor_revista: formData.editor_revista,
+      revistas_editadas: formData.revistas_editadas.filter(r => r !== '').map(r => ({ titulo: r })),
 
       grupos_pesquisa: formData.grupos_pesquisa
         .filter(g => g.nome !== '' && g.instituicao_nome !== '' && g.link !== '')
         .map(g => ({ nome: g.nome, descricao: g.descricao, instituicao_nome: g.instituicao_nome, link: g.link })),
 
       publicacoes: formData.publicacoes.filter(p => p.doi !== '' || p.titulo !== ''),
-      redes_sociais: formData.redes_sociais.filter(r => r.url !== ''),
+      redes_sociais: formData.redes_sociais.filter(r => r.plataforma !== '' && r.url !== ''),
       org_sociedades: formData.org_sociedades.filter(o => o !== '').map(o => ({ nome: o })),
     };
 

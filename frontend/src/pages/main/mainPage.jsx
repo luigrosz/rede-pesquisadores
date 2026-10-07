@@ -129,6 +129,7 @@ function MainPage() {
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(searchBody),
       });
 
@@ -209,7 +210,8 @@ function MainPage() {
       });
 
       if (response.ok) {
-        alert(`E-mail enviado com sucesso para ${selectedPesquisador.nome}!`);
+        const data = await response.json();
+        alert(data.message || `E-mail enviado com sucesso para ${selectedPesquisador.nome}!`);
         closeModal();
       } else {
         const errorData = await response.json();
@@ -252,9 +254,11 @@ function MainPage() {
           </button>
         </div>
       ) : (
-        <button onClick={handleAuthAction} className="login-button-fixed">
-          Entrar
-        </button>
+        <div className="main-auth-actions">
+          <button onClick={handleAuthAction} className="login-button-fixed">
+            Entrar
+          </button>
+        </div>
       )}
       <div className="main-page-header">
         <h1>Busca de Pesquisadores</h1>
@@ -404,15 +408,9 @@ function MainPage() {
               <h3>{pesquisador.nome}</h3>
               <p><strong>Estado:</strong> {pesquisador.nome_estado}</p>
 
-              {isLoggedIn && (
-                <>
-                  {pesquisador.disciplina_titulo && <p><strong>Disciplina:</strong> {pesquisador.disciplina_titulo}</p>}
-                  {pesquisador.programa_de_pos_titulo && <p><strong>Programa de Pós:</strong> {pesquisador.programa_de_pos_titulo}</p>}
-                </>
-              )}
               <div className="researcher-actions">
                 <button onClick={() => navigate(`/profile/${pesquisador.id_pesquisador}`)}>Ver Perfil</button>
-                <button onClick={() => handleSendEmailClick(pesquisador)}>Enviar E-mail</button>
+                {isLoggedIn && <button onClick={() => handleSendEmailClick(pesquisador)}>Enviar E-mail</button>}
               </div>
             </div>
           ))}

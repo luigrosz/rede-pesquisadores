@@ -13,7 +13,7 @@ function RegistrationPage2() {
     vinculos: [{ instituicao_nome: '', tipo: 'primaria', nome_programa: '' }],
     pos_graduacoes: [{ titulo: '', instituicao_nome: '' }],
     areas_pesquisa: [''],
-    disciplinas: [{ nome: '', descricao: '' }],
+    disciplinas: [{ descricao: '' }],
   });
 
   const handleSimpleChange = (e) => {
@@ -80,7 +80,7 @@ function RegistrationPage2() {
         .filter(v => v.instituicao_nome !== '' && v.tipo !== '' && v.nome_programa !== '')
         .map(v => ({ instituicao_nome: v.instituicao_nome, tipo: v.tipo, nome_programa: v.nome_programa })),
       areas_pesquisa: formData.areas_pesquisa.filter(a => a !== '').map(a => ({ descricao: a })),
-      disciplinas: formData.disciplinas.filter(d => d.nome !== '' || d.descricao !== '').map(d => ({ descricao: d.descricao || d.nome })),
+      disciplinas: formData.disciplinas.filter(d => d.descricao !== '').map(d => ({ descricao: d.descricao })),
       pos_graduacoes: formData.pos_graduacoes
         .filter(p => p.titulo !== '' && p.instituicao_nome !== '')
         .map(p => ({ titulo: p.titulo, instituicao_nome: p.instituicao_nome })),
@@ -210,12 +210,11 @@ function RegistrationPage2() {
           <legend>Disciplinas Lecionadas</legend>
           {formData.disciplinas.map((disciplina, index) => (
             <div key={index} className="dynamic-list-item-column">
-              <input name="nome" value={disciplina.nome} onChange={(e) => handleListChange(index, e, 'disciplinas')} placeholder="Nome da Disciplina" />
               <textarea name="descricao" value={disciplina.descricao} onChange={(e) => handleListChange(index, e, 'disciplinas')} placeholder="Descrição da Disciplina" />
               {formData.disciplinas.length > 1 && <button type="button" className="remove-btn" onClick={() => removeListItem(index, 'disciplinas')}>Remover Disciplina</button>}
             </div>
           ))}
-          <button type="button" className="add-btn" onClick={() => addListItem('disciplinas', { nome: '', descricao: '' })}>Adicionar Disciplina</button>
+          <button type="button" className="add-btn" onClick={() => addListItem('disciplinas', { descricao: '' })}>Adicionar Disciplina</button>
         </fieldset>
 
         <div className="registration-buttons">

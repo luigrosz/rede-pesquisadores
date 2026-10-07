@@ -40,13 +40,13 @@ router.post('/login', async (req, res) => {
 
     const user = userResult.rows[0];
 
-    if (!user.is_enabled) {
-      return res.status(403).json({ error: 'Sua conta ainda nao foi aprovada por um administrador.' });
-    }
-
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ error: 'Credenciais invalidas.' });
+    }
+
+    if (!user.is_enabled) {
+      return res.status(403).json({ error: 'Sua conta ainda nao foi aprovada por um administrador.' });
     }
 
     setAuthCookies(res, user);

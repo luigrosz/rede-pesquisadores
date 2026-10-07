@@ -36,7 +36,7 @@ function AdminPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Falha ao buscar dados do administrador.');
+        throw new Error(errorData.error || errorData.message || 'Falha ao buscar dados do administrador.');
       }
 
       const loggedUserId = Number(localStorage.getItem('userId'));
@@ -75,7 +75,7 @@ function AdminPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || `Falha ao ${newAdminStatus ? 'promover a admin' : 'remover como admin'}.`);
+        throw new Error(errorData.error || errorData.message || `Falha ao ${newAdminStatus ? 'promover a admin' : 'remover como admin'}.`);
       }
       const updatedPesquisador = await response.json();
       setAdminData(prevData =>
@@ -128,7 +128,7 @@ function AdminPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Falha ao adicionar contribuição.');
+        throw new Error(errorData.error || errorData.message || 'Falha ao adicionar contribuição.');
       }
       await fetchAdminData();
       setShowContributionForm(false);
@@ -161,7 +161,7 @@ function AdminPage() {
       const data = await response.json();
       setMensalidade(data.mensalidade);
       alert('Mensalidade atualizada com sucesso!');
-    } catch (err) {
+    } catch {
       alert('Erro ao atualizar mensalidade.');
     }
   };
@@ -201,9 +201,14 @@ function AdminPage() {
         </div>
       )}
 
-      <button onClick={handleLogout} className="logout-button-fixed">
-        Sair
-      </button>
+      <div className="admin-nav-actions">
+        <button onClick={() => navigate('/main')} className="btn-voltar-admin">
+          Voltar à busca
+        </button>
+        <button onClick={handleLogout} className="logout-button-fixed">
+          Sair
+        </button>
+      </div>
 
       <div >
         <input

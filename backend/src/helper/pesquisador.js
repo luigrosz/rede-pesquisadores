@@ -1,9 +1,11 @@
+const escapeLike = (value) => String(value).replace(/[\\%_]/g, '\\$&');
+
 export async function findOrCreateLocalidade(client, { nome_cidade, nome_estado }) {
   const findQuery = `
     SELECT id_localidade FROM "localidade"
-    WHERE unaccent(nome_cidade) ILIKE unaccent($1) AND unaccent(nome_estado) ILIKE unaccent($2);
+    WHERE unaccent(nome_cidade) ILIKE unaccent($1) ESCAPE '\\' AND unaccent(nome_estado) ILIKE unaccent($2) ESCAPE '\\';
   `;
-  const findResult = await client.query(findQuery, [nome_cidade, nome_estado]);
+  const findResult = await client.query(findQuery, [escapeLike(nome_cidade), escapeLike(nome_estado)]);
 
   if (findResult.rows.length > 0) {
     return findResult.rows[0].id_localidade;
@@ -19,8 +21,8 @@ export async function findOrCreateLocalidade(client, { nome_cidade, nome_estado 
 }
 
 export async function findOrCreateInstituicao(client, instituicao_nome) {
-  const findQuery = 'SELECT id FROM "instituicao" WHERE nome ILIKE $1;';
-  const findResult = await client.query(findQuery, [instituicao_nome]);
+  const findQuery = `SELECT id FROM "instituicao" WHERE nome ILIKE $1 ESCAPE '\\';`;
+  const findResult = await client.query(findQuery, [escapeLike(instituicao_nome)]);
 
   if (findResult.rows.length > 0) {
     return findResult.rows[0].id;
@@ -34,8 +36,8 @@ export async function findOrCreateInstituicao(client, instituicao_nome) {
 export async function findOrCreateAreaDoutorado(client, { titulo, instituicao_nome }, id_pesquisador) {
   const instituicao_id = await findOrCreateInstituicao(client, instituicao_nome);
 
-  const findQuery = 'SELECT id_doutorado FROM "area_doutorado" WHERE titulo ILIKE $1 AND instituicao_id = $2 AND id_pesquisador = $3;';
-  const findResult = await client.query(findQuery, [titulo, instituicao_id, id_pesquisador]);
+  const findQuery = 'SELECT id_doutorado FROM "area_doutorado" WHERE titulo ILIKE $1 ESCAPE \'\\\' AND instituicao_id = $2 AND id_pesquisador = $3;';
+  const findResult = await client.query(findQuery, [escapeLike(titulo), instituicao_id, id_pesquisador]);
 
   if (findResult.rows.length > 0) {
     return findResult.rows[0].id_doutorado;
@@ -49,8 +51,8 @@ export async function findOrCreateAreaDoutorado(client, { titulo, instituicao_no
 export async function findOrCreateGrupoPesquisa(client, { nome, descricao, instituicao_nome, link }) {
   const instituicao_id = await findOrCreateInstituicao(client, instituicao_nome);
 
-  const findQuery = 'SELECT id_grupo FROM "grupo_pesquisa" WHERE nome ILIKE $1 AND instituicao = $2;';
-  const findResult = await client.query(findQuery, [nome, instituicao_id]);
+  const findQuery = 'SELECT id_grupo FROM "grupo_pesquisa" WHERE nome ILIKE $1 ESCAPE \'\\\' AND instituicao = $2;';
+  const findResult = await client.query(findQuery, [escapeLike(nome), instituicao_id]);
 
   if (findResult.rows.length > 0) {
     return findResult.rows[0].id_grupo;

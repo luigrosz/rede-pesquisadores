@@ -3,6 +3,28 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import './ProfilePage.css';
 
+const REQUIRED_FIELDS = {
+  pos_graduacoes: { label: 'Pós-Graduações', fields: [['titulo', 'Título'], ['instituicao_nome', 'Instituição']] },
+  publicacoes: { label: 'Publicações', fields: [['doi', 'DOI'], ['titulo', 'Título']] },
+  redes_sociais: { label: 'Redes Sociais', fields: [['plataforma', 'Plataforma'], ['url', 'URL']] },
+  vinculos: { label: 'Vínculos Institucionais', fields: [['instituicao_nome', 'Instituição'], ['tipo', 'Tipo de Vínculo'], ['nome_programa', 'Programa']] },
+  grupos_pesquisa: { label: 'Grupos de Pesquisa', fields: [['nome', 'Nome'], ['descricao', 'Descrição'], ['instituicao_nome', 'Instituição'], ['link', 'Link']] },
+  servicos: { label: 'Serviços', fields: [['nome', 'Nome'], ['cidade', 'Cidade'], ['estado', 'Estado']] },
+  equipamentos: { label: 'Equipamentos', fields: [['nome', 'Nome'], ['cidade', 'Cidade'], ['estado', 'Estado']] },
+};
+
+const ENUM_LABELS = {
+  primaria: 'Primário',
+  secundario: 'Secundário',
+  pos: 'Pós-Graduação',
+  linkedin: 'LinkedIn',
+  researchgate: 'ResearchGate',
+  x: 'X (Twitter)',
+  instagram: 'Instagram',
+};
+
+const enumLabel = (value) => ENUM_LABELS[value] || value;
+
 function ProfilePage() {
   const navigate = useNavigate();
   const { userId } = useParams();
@@ -20,13 +42,16 @@ function ProfilePage() {
     pq: false, sbfte: false, editor_revista: false,
     pos_graduacoes: [], publicacoes: [], redes_sociais: [], areas_pesquisa: [],
     vinculos: [], grupos_pesquisa: [], org_sociedades: [], disciplinas: [],
-    servicos: [], equipamentos: [],
+    revistas_editadas: [], servicos: [], equipamentos: [],
   });
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
   const [saveError, setSaveError] = useState('');
+  const [invalidFields, setInvalidFields] = useState([]);
+
+  const isInvalid = (key) => (invalidFields.includes(key) ? 'invalid-field' : undefined);
 
   const estadosBrasileiros = [
     'Acre', 'Alagoas', 'Amapá', 'Amazonas', 'Bahia', 'Ceará', 'Distrito Federal',
@@ -41,11 +66,7 @@ function ProfilePage() {
       try {
         setLoading(true);
         const response = await api.get(`/pesquisador/${userId}`);
-        let fetchedData = response.data;
-
-        if (!fetchedData.localidade) {
-          fetchedData.localidade = {};
-        }
+        const fetchedData = response.data;
 
         setUserData({
           name: fetchedData.nome || '',
@@ -56,7 +77,6 @@ function ProfilePage() {
           nome_estado: fetchedData.nome_estado || '',
           paginas_institucionais: fetchedData.pagina_institucional ? [fetchedData.pagina_institucional] : [''],
           laboratorio: fetchedData.laboratorio || '',
-          localidade: fetchedData.localidade || '',
           pq: fetchedData.pq || false,
           sbfte: fetchedData.sbfte || false,
           editor_revista: fetchedData.editor_revista || false,
@@ -68,6 +88,7 @@ function ProfilePage() {
           grupos_pesquisa: fetchedData.grupos_pesquisa || [],
           org_sociedades: fetchedData.org_sociedades || [],
           disciplinas: fetchedData.disciplinas || [],
+          revistas_editadas: fetchedData.revistas_editadas || [],
           servicos: fetchedData.servicos ? fetchedData.servicos.map(serv => ({
             nome: serv.nome || '',
             descricao: serv.descricao || '',
@@ -84,7 +105,7 @@ function ProfilePage() {
           })) : [],
         });
       } catch (err) {
-        setError('Failed to fetch user data.');
+        setError('Não foi possível carregar o perfil.');
         console.error('Error fetching user data:', err);
       } finally {
         setLoading(false);
@@ -94,11 +115,20 @@ function ProfilePage() {
     fetchUserData();
   }, [userId, navigate]);
 
+  useEffect(() => {
+    if (invalidFields.length === 0) return;
+    const first = document.querySelector('.invalid-field');
+    if (!first) return;
+    first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    first.focus({ preventScroll: true });
+  }, [invalidFields]);
+
   const toggleEditMode = (e) => {
     e.preventDefault();
     setIsEditing(!isEditing);
     setSuccessMessage('');
     setSaveError('');
+    setInvalidFields([]);
   };
 
   const handleChange = (e) => {
@@ -130,7 +160,7 @@ function ProfilePage() {
   const handleRemoveAreaPesquisa = (index) => setUserData(p => ({ ...p, areas_pesquisa: p.areas_pesquisa.filter((_, i) => i !== index) }));
   const handleChangeAreaPesquisa = (index, value) => setUserData(p => ({ ...p, areas_pesquisa: p.areas_pesquisa.map((item, i) => i === index ? { ...item, descricao: value } : item) }));
 
-  const handleAddVinculo = () => setUserData(p => ({ ...p, vinculos: [...p.vinculos, { instituicao_nome: '', tipo: '', nome_programa: '' }] }));
+  const handleAddVinculo = () => setUserData(p => ({ ...p, vinculos: [...p.vinculos, { instituicao_nome: '', tipo: 'primaria', nome_programa: '' }] }));
   const handleRemoveVinculo = (index) => setUserData(p => ({ ...p, vinculos: p.vinculos.filter((_, i) => i !== index) }));
   const handleChangeVinculo = (index, field, value) => setUserData(p => ({ ...p, vinculos: p.vinculos.map((item, i) => i === index ? { ...item, [field]: value } : item) }));
 
@@ -142,9 +172,13 @@ function ProfilePage() {
   const handleRemoveOrgSociedade = (index) => setUserData(p => ({ ...p, org_sociedades: p.org_sociedades.filter((_, i) => i !== index) }));
   const handleChangeOrgSociedade = (index, value) => setUserData(p => ({ ...p, org_sociedades: p.org_sociedades.map((item, i) => i === index ? { ...item, nome: value } : item) }));
 
-  const handleAddDisciplina = () => setUserData(p => ({ ...p, disciplinas: [...p.disciplinas, { nome: '', descricao: '' }] }));
+  const handleAddDisciplina = () => setUserData(p => ({ ...p, disciplinas: [...p.disciplinas, { descricao: '' }] }));
   const handleRemoveDisciplina = (index) => setUserData(p => ({ ...p, disciplinas: p.disciplinas.filter((_, i) => i !== index) }));
   const handleChangeDisciplina = (index, field, value) => setUserData(p => ({ ...p, disciplinas: p.disciplinas.map((item, i) => i === index ? { ...item, [field]: value } : item) }));
+
+  const handleAddRevista = () => setUserData(p => ({ ...p, revistas_editadas: [...p.revistas_editadas, { titulo: '' }] }));
+  const handleRemoveRevista = (index) => setUserData(p => ({ ...p, revistas_editadas: p.revistas_editadas.filter((_, i) => i !== index) }));
+  const handleChangeRevista = (index, value) => setUserData(p => ({ ...p, revistas_editadas: p.revistas_editadas.map((item, i) => i === index ? { ...item, titulo: value } : item) }));
 
   const handleAddServico = () => setUserData(p => ({ ...p, servicos: [...p.servicos, { nome: '', descricao: '', area: '', tipo: '', cidade: '', estado: '' }] }));
   const handleRemoveServico = (index) => setUserData(p => ({ ...p, servicos: p.servicos.filter((_, i) => i !== index) }));
@@ -161,22 +195,25 @@ function ProfilePage() {
     try {
       setSaveError('');
 
-      const hasSomeValue = (item, fields) => fields.some(field => item[field]?.trim());
-      const hasMissingValue = (item, fields) => hasSomeValue(item, fields) && fields.some(field => !item[field]?.trim());
-      const incompleteSections = [];
+      const invalidKeys = [];
+      const problems = [];
 
-      if (userData.pos_graduacoes.some(pg => hasMissingValue(pg, ['titulo', 'instituicao_nome']))) incompleteSections.push('Pós-Graduações');
-      if (userData.publicacoes.some(pub => hasMissingValue(pub, ['doi', 'titulo']))) incompleteSections.push('Publicações');
-      if (userData.redes_sociais.some(rede => hasMissingValue(rede, ['plataforma', 'url']))) incompleteSections.push('Redes Sociais');
-      if (userData.vinculos.some(vinculo => hasMissingValue(vinculo, ['instituicao_nome', 'tipo', 'nome_programa']))) incompleteSections.push('Vínculos Institucionais');
-      if (userData.grupos_pesquisa.some(grupo => hasMissingValue(grupo, ['nome', 'descricao', 'instituicao_nome', 'link']))) incompleteSections.push('Grupos de Pesquisa');
-      if (userData.servicos.some(servico => hasMissingValue(servico, ['nome', 'cidade', 'estado']))) incompleteSections.push('Serviços');
-      if (userData.equipamentos.some(equipamento => hasMissingValue(equipamento, ['nome', 'cidade', 'estado']))) incompleteSections.push('Equipamentos');
+      for (const [section, { label, fields }] of Object.entries(REQUIRED_FIELDS)) {
+        userData[section].forEach((item, index) => {
+          const empty = fields.filter(([field]) => !item[field]?.trim());
+          if (empty.length === 0 || empty.length === fields.length) return;
 
-      if (incompleteSections.length > 0) {
-        setSaveError(`Preencha todos os campos das seções: ${incompleteSections.join(', ')}.`);
+          problems.push(`${label} ${index + 1}: ${empty.map(([, fieldLabel]) => fieldLabel).join(', ')}`);
+          empty.forEach(([field]) => invalidKeys.push(`${section}-${index}-${field}`));
+        });
+      }
+
+      if (invalidKeys.length > 0) {
+        setInvalidFields(invalidKeys);
+        alert(`Preencha os campos obrigatórios:\n\n${problems.map(p => `• ${p}`).join('\n')}`);
         return;
       }
+      setInvalidFields([]);
 
       const payload = {
         nome: userData.name,
@@ -185,7 +222,7 @@ function ProfilePage() {
         link_lattes: userData.link_lattes,
         pagina_institucional: userData.paginas_institucionais[0] || '',
         laboratorio: userData.laboratorio,
-        localidade: userData.localidade,
+        localidade: { nome_cidade: userData.nome_cidade, nome_estado: userData.nome_estado },
         pq: userData.pq,
         sbfte: userData.sbfte,
         editor_revista: userData.editor_revista,
@@ -196,13 +233,10 @@ function ProfilePage() {
         vinculos: userData.vinculos.filter(vin => vin.instituicao_nome !== '' && vin.tipo !== '' && vin.nome_programa !== ''),
         grupos_pesquisa: userData.grupos_pesquisa.filter(grupo => grupo.nome !== '' && grupo.descricao !== '' && grupo.instituicao_nome !== '' && grupo.link !== ''),
         org_sociedades: userData.org_sociedades.filter(org => org.nome !== ''),
-        disciplinas: userData.disciplinas.filter(disc => disc.nome !== '' || disc.descricao !== ''),
-        servicos: userData.servicos.filter(serv =>
-          serv.nome !== '' || serv.descricao !== '' || serv.area !== '' || serv.tipo !== ''
-        ),
-        equipamentos: userData.equipamentos.filter(equip =>
-          equip.nome !== '' || equip.descricao_tecnica !== ''
-        ),
+        disciplinas: userData.disciplinas.filter(disc => disc.descricao !== ''),
+        revistas_editadas: userData.revistas_editadas.filter(rev => rev.titulo && rev.titulo.trim()),
+        servicos: userData.servicos.filter(serv => serv.nome && serv.cidade && serv.estado),
+        equipamentos: userData.equipamentos.filter(equip => equip.nome && equip.cidade && equip.estado),
       };
 
       await api.put(`/pesquisador/${loggedUserId}`, payload);
@@ -242,6 +276,15 @@ function ProfilePage() {
   return (
     <div className="profile-page-container">
       <div className="profile-navigation-actions">
+        {canEdit && (
+          <button
+            type="button"
+            onClick={toggleEditMode}
+            className={`edit-mode-button${isEditing ? ' editing' : ''}`}
+          >
+            {isEditing ? 'Cancelar Edição' : 'Editar Perfil'}
+          </button>
+        )}
         <button onClick={() => navigate('/main')} className="back-to-search-button">
           Voltar à busca
         </button>
@@ -258,19 +301,14 @@ function ProfilePage() {
 
       <div className="profile-header">
         <h1 className="profile-title">{userData.name || 'Perfil do Pesquisador'}</h1>
-        {canEdit && (
-          <button
-            type="button"
-            onClick={toggleEditMode}
-            className={`edit-mode-button${isEditing ? ' editing' : ''}`}
-          >
-            {isEditing ? 'Cancelar Edição' : 'Editar Perfil'}
-          </button>
-        )}
       </div>
       {successMessage && <div className="success-message">{successMessage}</div>}
       {saveError && <div className="error-message">{saveError}</div>}
-      <form onSubmit={handleSubmit} className="profile-form">
+      <form
+        onSubmit={handleSubmit}
+        onChange={() => invalidFields.length > 0 && setInvalidFields([])}
+        className="profile-form"
+      >
 
         {/* --- Informacoes Pessoais --- */}
         <div className="form-section">
@@ -279,10 +317,12 @@ function ProfilePage() {
             <label htmlFor="name">Nome:</label>
             <p className="read-only-field">{userData.name}</p>
           </div>
-          <div className="form-group">
-            <label htmlFor="email">Email:</label>
-            <p className="read-only-field">{userData.email}</p>
-          </div>
+          {userData.email && (
+            <div className="form-group">
+              <label htmlFor="email">Email:</label>
+              <p className="read-only-field">{userData.email}</p>
+            </div>
+          )}
 
           <div className="form-group">
             <label htmlFor="nome_cidade">Cidade:</label>
@@ -351,6 +391,26 @@ function ProfilePage() {
               </div>
             ))}
           </div>
+
+          {isEditing ? (
+            <>
+              {userData.revistas_editadas.map((rev, index) => (
+                <div key={index} className="array-item-group">
+                  <input value={rev.titulo || ''} onChange={(e) => handleChangeRevista(index, e.target.value)} placeholder="Nome da Revista" />
+                  <button type="button" onClick={() => handleRemoveRevista(index)} className="remove-button">Remover</button>
+                </div>
+              ))}
+              <button type="button" onClick={handleAddRevista} className="add-button">Adicionar Revista</button>
+            </>
+          ) : (
+            userData.revistas_editadas.some(rev => rev.titulo) && (
+              <div className="read-only-list">
+                {userData.revistas_editadas.map((rev, index) => rev.titulo && (
+                  <p key={index} className="read-only-field">{rev.titulo}</p>
+                ))}
+              </div>
+            )
+          )}
         </div>
 
         {/* ========================================================= */}
@@ -366,7 +426,7 @@ function ProfilePage() {
                   <div className="form-group">
                     <label>Título:</label>
                     {isEditing ? (
-                      <input type="text" value={pg.titulo} onChange={(e) => handleChangePosGraduacao(index, 'titulo', e.target.value)} />
+                      <input type="text" value={pg.titulo} onChange={(e) => handleChangePosGraduacao(index, 'titulo', e.target.value)} className={isInvalid(`pos_graduacoes-${index}-titulo`)} />
                     ) : (
                       <p className="read-only-field">{pg.titulo || 'Não informado'}</p>
                     )}
@@ -374,7 +434,7 @@ function ProfilePage() {
                   <div className="form-group">
                     <label>Nome da Instituição:</label>
                     {isEditing ? (
-                      <input type="text" value={pg.instituicao_nome} onChange={(e) => handleChangePosGraduacao(index, 'instituicao_nome', e.target.value)} />
+                      <input type="text" value={pg.instituicao_nome} onChange={(e) => handleChangePosGraduacao(index, 'instituicao_nome', e.target.value)} className={isInvalid(`pos_graduacoes-${index}-instituicao_nome`)} />
                     ) : (
                       <p className="read-only-field">{pg.instituicao_nome || 'Não informado'}</p>
                     )}
@@ -395,8 +455,8 @@ function ProfilePage() {
                 <>
                   {userData.publicacoes.map((pub, index) => (
                     <div key={index} className="array-item-group">
-                      <input type="text" value={pub.doi || ''} onChange={(e) => handleChangePublicacao(index, 'doi', e.target.value)} placeholder="DOI" />
-                      <input type="text" value={pub.titulo || ''} onChange={(e) => handleChangePublicacao(index, 'titulo', e.target.value)} placeholder="Título" />
+                      <input type="text" value={pub.doi || ''} onChange={(e) => handleChangePublicacao(index, 'doi', e.target.value)} placeholder="DOI" className={isInvalid(`publicacoes-${index}-doi`)} />
+                      <input type="text" value={pub.titulo || ''} onChange={(e) => handleChangePublicacao(index, 'titulo', e.target.value)} placeholder="Título" className={isInvalid(`publicacoes-${index}-titulo`)} />
                       <button type="button" onClick={() => handleRemovePublicacao(index)} className="remove-button">Remover</button>
                     </div>
                   ))}
@@ -417,8 +477,14 @@ function ProfilePage() {
                 <>
                   {userData.redes_sociais.map((rede, index) => (
                     <div key={index} className="array-item-group">
-                      <input type="text" value={rede.plataforma || ''} onChange={(e) => handleChangeRedeSocial(index, 'plataforma', e.target.value)} placeholder="Plataforma" />
-                      <input type="url" value={rede.url || ''} onChange={(e) => handleChangeRedeSocial(index, 'url', e.target.value)} placeholder="URL" />
+                      <select value={rede.plataforma || ''} onChange={(e) => handleChangeRedeSocial(index, 'plataforma', e.target.value)} className={isInvalid(`redes_sociais-${index}-plataforma`)}>
+                        <option value="" disabled>Plataforma</option>
+                        <option value="linkedin">LinkedIn</option>
+                        <option value="researchgate">ResearchGate</option>
+                        <option value="x">X (Twitter)</option>
+                        <option value="instagram">Instagram</option>
+                      </select>
+                      <input type="url" value={rede.url || ''} onChange={(e) => handleChangeRedeSocial(index, 'url', e.target.value)} placeholder="URL" className={isInvalid(`redes_sociais-${index}-url`)} />
                       <button type="button" onClick={() => handleRemoveRedeSocial(index)} className="remove-button">Remover</button>
                     </div>
                   ))}
@@ -427,7 +493,7 @@ function ProfilePage() {
               ) : (
                 <div className="read-only-list">
                   {userData.redes_sociais.length > 0 ? userData.redes_sociais.map((rede, index) => (
-                    <p key={index} className="read-only-field">{`${rede.plataforma}: ${rede.url}`}</p>
+                    <p key={index} className="read-only-field">{`${enumLabel(rede.plataforma)}: ${rede.url}`}</p>
                   )) : <p className="read-only-field">Não informado</p>}
                 </div>
               )}
@@ -460,9 +526,14 @@ function ProfilePage() {
                 <>
                   {userData.vinculos.map((vinculo, index) => (
                     <div key={index} className="array-item-group">
-                      <input type="text" value={vinculo.instituicao_nome || ''} onChange={(e) => handleChangeVinculo(index, 'instituicao_nome', e.target.value)} placeholder="Instituição" />
-                      <input type="text" value={vinculo.tipo || ''} onChange={(e) => handleChangeVinculo(index, 'tipo', e.target.value)} placeholder="Tipo" />
-                      <input type="text" value={vinculo.nome_programa || ''} onChange={(e) => handleChangeVinculo(index, 'nome_programa', e.target.value)} placeholder="Programa" />
+                      <input type="text" value={vinculo.instituicao_nome || ''} onChange={(e) => handleChangeVinculo(index, 'instituicao_nome', e.target.value)} placeholder="Instituição" className={isInvalid(`vinculos-${index}-instituicao_nome`)} />
+                      <select value={vinculo.tipo || ''} onChange={(e) => handleChangeVinculo(index, 'tipo', e.target.value)} className={isInvalid(`vinculos-${index}-tipo`)}>
+                        <option value="" disabled>Tipo de Vínculo</option>
+                        <option value="primaria">Primário</option>
+                        <option value="secundario">Secundário</option>
+                        <option value="pos">Pós-Graduação</option>
+                      </select>
+                      <input type="text" value={vinculo.nome_programa || ''} onChange={(e) => handleChangeVinculo(index, 'nome_programa', e.target.value)} placeholder="Programa" className={isInvalid(`vinculos-${index}-nome_programa`)} />
                       <button type="button" onClick={() => handleRemoveVinculo(index)} className="remove-button">Remover</button>
                     </div>
                   ))}
@@ -471,7 +542,7 @@ function ProfilePage() {
               ) : (
                 <div className="read-only-list">
                   {userData.vinculos.length > 0 ? userData.vinculos.map((vinculo, index) => (
-                    <p key={index} className="read-only-field">{`${vinculo.instituicao_nome} - ${vinculo.tipo} (${vinculo.nome_programa})`}</p>
+                    <p key={index} className="read-only-field">{`${vinculo.instituicao_nome} - ${enumLabel(vinculo.tipo)} (${vinculo.nome_programa})`}</p>
                   )) : <p className="read-only-field">Não informado</p>}
                 </div>
               )}
@@ -483,10 +554,10 @@ function ProfilePage() {
                 <>
                   {userData.grupos_pesquisa.map((grupo, index) => (
                     <div key={index} className="array-item-group">
-                      <input type="text" value={grupo.nome || ''} onChange={(e) => handleChangeGrupoPesquisa(index, 'nome', e.target.value)} placeholder="Nome" />
-                      <textarea value={grupo.descricao || ''} onChange={(e) => handleChangeGrupoPesquisa(index, 'descricao', e.target.value)} placeholder="Descrição" />
-                      <input type="text" value={grupo.instituicao_nome || ''} onChange={(e) => handleChangeGrupoPesquisa(index, 'instituicao_nome', e.target.value)} placeholder="Instituição" />
-                      <input type="url" value={grupo.link || ''} onChange={(e) => handleChangeGrupoPesquisa(index, 'link', e.target.value)} placeholder="Link" />
+                      <input type="text" value={grupo.nome || ''} onChange={(e) => handleChangeGrupoPesquisa(index, 'nome', e.target.value)} placeholder="Nome" className={isInvalid(`grupos_pesquisa-${index}-nome`)} />
+                      <textarea value={grupo.descricao || ''} onChange={(e) => handleChangeGrupoPesquisa(index, 'descricao', e.target.value)} placeholder="Descrição" className={isInvalid(`grupos_pesquisa-${index}-descricao`)} />
+                      <input type="text" value={grupo.instituicao_nome || ''} onChange={(e) => handleChangeGrupoPesquisa(index, 'instituicao_nome', e.target.value)} placeholder="Instituição" className={isInvalid(`grupos_pesquisa-${index}-instituicao_nome`)} />
+                      <input type="url" value={grupo.link || ''} onChange={(e) => handleChangeGrupoPesquisa(index, 'link', e.target.value)} placeholder="Link" className={isInvalid(`grupos_pesquisa-${index}-link`)} />
                       <button type="button" onClick={() => handleRemoveGrupoPesquisa(index)} className="remove-button">Remover</button>
                     </div>
                   ))}
@@ -528,8 +599,7 @@ function ProfilePage() {
                 <>
                   {userData.disciplinas.map((disc, index) => (
                     <div key={index} className="array-item-group">
-                      <input type="text" value={disc.nome || ''} onChange={(e) => handleChangeDisciplina(index, 'nome', e.target.value)} placeholder="Nome" />
-                      <textarea value={disc.descricao || ''} onChange={(e) => handleChangeDisciplina(index, 'descricao', e.target.value)} placeholder="Descrição" />
+                      <textarea value={disc.descricao || ''} onChange={(e) => handleChangeDisciplina(index, 'descricao', e.target.value)} placeholder="Disciplina" />
                       <button type="button" onClick={() => handleRemoveDisciplina(index)} className="remove-button">Remover</button>
                     </div>
                   ))}
@@ -538,7 +608,7 @@ function ProfilePage() {
               ) : (
                 <div className="read-only-list">
                   {userData.disciplinas.length > 0 ? userData.disciplinas.map((disc, index) => (
-                    <p key={index} className="read-only-field">{`${disc.nome}: ${disc.descricao}`}</p>
+                    <p key={index} className="read-only-field">{disc.descricao}</p>
                   )) : <p className="read-only-field">Não informado</p>}
                 </div>
               )}
@@ -557,12 +627,12 @@ function ProfilePage() {
             <>
               {userData.servicos.map((serv, index) => (
                 <div key={index} className="array-item-group">
-                  <input type="text" value={serv.nome || ''} onChange={(e) => handleChangeServico(index, 'nome', e.target.value)} placeholder="Nome" />
+                  <input type="text" value={serv.nome || ''} onChange={(e) => handleChangeServico(index, 'nome', e.target.value)} placeholder="Nome" className={isInvalid(`servicos-${index}-nome`)} />
                   <input value={serv.descricao || ''} onChange={(e) => handleChangeServico(index, 'descricao', e.target.value)} placeholder="Descrição" />
                   <input type="text" value={serv.area || ''} onChange={(e) => handleChangeServico(index, 'area', e.target.value)} placeholder="Área" />
                   <input type="text" value={serv.tipo || ''} onChange={(e) => handleChangeServico(index, 'tipo', e.target.value)} placeholder="Tipo" />
-                  <input type="text" value={serv.cidade || ''} onChange={(e) => handleChangeServico(index, 'cidade', e.target.value)} placeholder="Cidade" />
-                  <select value={serv.estado || ''} onChange={(e) => handleChangeServico(index, 'estado', e.target.value)}>
+                  <input type="text" value={serv.cidade || ''} onChange={(e) => handleChangeServico(index, 'cidade', e.target.value)} placeholder="Cidade" className={isInvalid(`servicos-${index}-cidade`)} />
+                  <select value={serv.estado || ''} onChange={(e) => handleChangeServico(index, 'estado', e.target.value)} className={isInvalid(`servicos-${index}-estado`)}>
                     <option value="">Estado</option>
                     {estadosBrasileiros.map((uf) => <option key={uf} value={uf}>{uf}</option>)}
                   </select>
@@ -591,10 +661,10 @@ function ProfilePage() {
             <>
               {userData.equipamentos.map((equip, index) => (
                 <div key={index} className="array-item-group">
-                  <input type="text" value={equip.nome || ''} onChange={(e) => handleChangeEquipamento(index, 'nome', e.target.value)} placeholder="Nome" />
+                  <input type="text" value={equip.nome || ''} onChange={(e) => handleChangeEquipamento(index, 'nome', e.target.value)} placeholder="Nome" className={isInvalid(`equipamentos-${index}-nome`)} />
                   <input value={equip.descricao_tecnica || ''} onChange={(e) => handleChangeEquipamento(index, 'descricao_tecnica', e.target.value)} placeholder="Descrição" />
-                  <input type="text" value={equip.cidade || ''} onChange={(e) => handleChangeEquipamento(index, 'cidade', e.target.value)} placeholder="Cidade" />
-                  <select value={equip.estado || ''} onChange={(e) => handleChangeEquipamento(index, 'estado', e.target.value)}>
+                  <input type="text" value={equip.cidade || ''} onChange={(e) => handleChangeEquipamento(index, 'cidade', e.target.value)} placeholder="Cidade" className={isInvalid(`equipamentos-${index}-cidade`)} />
+                  <select value={equip.estado || ''} onChange={(e) => handleChangeEquipamento(index, 'estado', e.target.value)} className={isInvalid(`equipamentos-${index}-estado`)}>
                     <option value="">Estado</option>
                     {estadosBrasileiros.map((uf) => <option key={uf} value={uf}>{uf}</option>)}
                   </select>

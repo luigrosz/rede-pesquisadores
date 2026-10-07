@@ -4,7 +4,7 @@ import * as path from 'path';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
-let __dirname = path.join(path.dirname(__filename), '..', '..', 'db_init');
+let __dirname = path.join(path.dirname(__filename), '..', '..', 'db-init');
 
 
 async function createTables() {

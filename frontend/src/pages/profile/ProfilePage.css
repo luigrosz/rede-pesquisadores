@@ -68,28 +68,13 @@
 /* === EDIT BUTTON === */
 .edit-mode-button {
   display: none;
+  color: white;
+  background-color: #007bff;
 }
 
 @media (min-width: 768px) {
   .edit-mode-button {
     display: block;
-    position: absolute;
-    right: 120px;
-    padding: 7px 18px;
-    border: none;
-    border-radius: 6px;
-    font-size: 0.88rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: opacity 0.2s;
-    color: white;
-    background-color: #007bff;
-  }
-}
-
-@media (min-width: 1100px) {
-  .edit-mode-button {
-    right: 0;
   }
 }
 
@@ -138,11 +123,11 @@
 }
 
 /* === FORM GROUPS === */
-.form-group {
+.profile-page-container .form-group {
   margin-bottom: 14px;
 }
 
-.form-group label {
+.profile-page-container .form-group label {
   display: block;
   font-size: 0.8rem;
   font-weight: 600;
@@ -152,9 +137,9 @@
   letter-spacing: 0.04em;
 }
 
-.form-group input,
-.form-group select,
-.form-group textarea {
+.profile-page-container .form-group input,
+.profile-page-container .form-group select,
+.profile-page-container .form-group textarea {
   width: 100%;
   padding: 9px 12px;
   border: 1px solid #ced4da;
@@ -165,9 +150,9 @@
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
-.form-group input:focus,
-.form-group select:focus,
-.form-group textarea:focus {
+.profile-page-container .form-group input:focus,
+.profile-page-container .form-group select:focus,
+.profile-page-container .form-group textarea:focus {
   border-color: #0056b3;
   outline: none;
   box-shadow: 0 0 0 3px rgba(0, 86, 179, 0.12);
@@ -217,14 +202,14 @@ a.link-field:hover {
   padding: 4px 0;
 }
 
-.checkbox-group {
+.profile-page-container .checkbox-group {
   display: flex;
   align-items: center;
   gap: 8px;
   margin-bottom: 0;
 }
 
-.checkbox-group input[type="checkbox"] {
+.profile-page-container .checkbox-group input[type="checkbox"] {
   width: 16px;
   height: 16px;
   cursor: pointer;
@@ -232,7 +217,7 @@ a.link-field:hover {
   flex-shrink: 0;
 }
 
-.checkbox-group label {
+.profile-page-container .checkbox-group label {
   font-size: 0.95rem;
   font-weight: 500;
   color: #333;
@@ -288,6 +273,14 @@ a.link-field:hover {
   border-color: #0056b3;
   outline: none;
   box-shadow: 0 0 0 3px rgba(0, 86, 179, 0.12);
+}
+
+.array-item-group .invalid-field,
+.array-item-group .invalid-field:focus,
+.pos-graduacao-item .invalid-field,
+.pos-graduacao-item .invalid-field:focus {
+  border-color: #dc3545;
+  box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.15);
 }
 
 .array-item-group textarea,
@@ -381,13 +374,15 @@ a.link-field:hover {
   top: 16px;
   right: 16px;
   display: flex;
+  align-items: center;
   gap: 8px;
   z-index: 100;
 }
 
-.back-to-search-button,
-.logout-button-fixed,
-.login-button-fixed {
+.profile-navigation-actions .back-to-search-button,
+.profile-navigation-actions .logout-button-fixed,
+.profile-navigation-actions .login-button-fixed,
+.profile-navigation-actions .edit-mode-button {
   position: static;
   top: auto;
   right: auto;
@@ -401,24 +396,24 @@ a.link-field:hover {
   transition: opacity 0.2s;
 }
 
-.back-to-search-button {
+.profile-navigation-actions .back-to-search-button {
   color: #0056b3;
   background-color: #e7f1ff;
 }
 
-.logout-button-fixed {
+.profile-navigation-actions .logout-button-fixed {
   background-color: #dc3545;
   color: white;
 }
 
-.login-button-fixed {
+.profile-navigation-actions .login-button-fixed {
   background-color: #0056b3;
   color: white;
 }
 
-.back-to-search-button:hover,
-.logout-button-fixed:hover,
-.login-button-fixed:hover {
+.profile-navigation-actions .back-to-search-button:hover,
+.profile-navigation-actions .logout-button-fixed:hover,
+.profile-navigation-actions .login-button-fixed:hover {
   opacity: 0.85;
 }
 
@@ -429,37 +424,10 @@ a.link-field:hover {
     justify-content: flex-end;
   }
 
-  .back-to-search-button,
-  .logout-button-fixed,
-  .login-button-fixed {
+  .profile-navigation-actions .back-to-search-button,
+  .profile-navigation-actions .logout-button-fixed,
+  .profile-navigation-actions .login-button-fixed {
     padding: 8px 12px;
     font-size: 0.8rem;
-  }
-}
-
-/* === LEGACY FIELDSET === */
-fieldset {
-  border: 1px solid #dddfe2;
-  border-radius: 6px;
-  padding: 16px;
-  margin-bottom: 20px;
-}
-
-legend {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #0056b3;
-  padding: 0 8px;
-}
-
-@media (min-width: 768px) {
-  fieldset {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0 24px;
-  }
-
-  legend {
-    grid-column: 1 / -1;
   }
 }

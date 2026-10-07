@@ -203,8 +203,8 @@ router.post('/', registrationLimiter, async (req, res) => {
 
     if (pos_graduacoes && pos_graduacoes.length > 0) {
       for (const pos of pos_graduacoes) {
-        if (pos.titulo && pos.instituicao_name) {
-          const instituicaoPosId = await findOrCreateInstituicao(client, pos.instituicao_name);
+        if (pos.titulo && pos.instituicao_nome) {
+          const instituicaoPosId = await findOrCreateInstituicao(client, pos.instituicao_nome);
           await client.query(
             `INSERT INTO "pos_graduacao" (id_pesquisador, id_instituicao, titulo) VALUES ($1, $2, $3);`,
             [id_pesquisador, instituicaoPosId, pos.titulo]
@@ -253,7 +253,7 @@ router.post('/', registrationLimiter, async (req, res) => {
   }
 });
 
-async function executePesquisadorSearch(searchParams) {
+async function executePesquisadorSearch(searchParams, includeContact = false) {
   try {
     const {
       nome,
@@ -271,7 +271,7 @@ async function executePesquisadorSearch(searchParams) {
     } = searchParams;
 
     let query = `
-      SELECT DISTINCT p.id_pesquisador, p.nome, p.link_lattes, p.email, p.celular,
+      SELECT DISTINCT p.id_pesquisador, p.nome, p.link_lattes, ${includeContact ? 'p.email, p.celular,' : ''}
              p.pagina_institucional, p.pq, p.is_admin, p.editor_revista,
              p.laboratorio, p.sbfte,
              CASE WHEN p.enabled_until IS NOT NULL AND p.enabled_until > NOW() THEN TRUE ELSE FALSE END AS is_enabled,
@@ -374,17 +374,17 @@ router.patch('/mensalidade', authMiddleware, async (req, res) => {
 router.post('/pesquisar', authMiddleware, async (req, res) => {
   if (!req.user.isAdmin) return res.status(403).json({ error: 'Acesso negado.' });
   try {
-    const result = await executePesquisadorSearch(req.body);
+    const result = await executePesquisadorSearch(req.body, true);
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: 'Erro interno' });
   }
 });
 
-router.post('/pesquisar/ativos', async (req, res) => {
+router.post('/pesquisar/ativos', optionalAuthMiddleware, async (req, res) => {
   try {
     const searchParams = { ...req.body, is_enabled: true };
-    const result = await executePesquisadorSearch(searchParams);
+    const result = await executePesquisadorSearch(searchParams, Boolean(req.user));
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: 'Erro interno' });
@@ -402,6 +402,11 @@ router.get('/:id', optionalAuthMiddleware, async (req, res) => {
     if (pesquisadorResult.rows.length === 0) return res.status(404).json({ error: 'Pesquisador nao encontrado' });
     const pesquisador = pesquisadorResult.rows[0];
 
+    if (!req.user) {
+      delete pesquisador.email;
+      delete pesquisador.celular;
+    }
+
     const posGrad = await pool.query('SELECT pg.titulo, i.nome AS instituicao_nome FROM "pos_graduacao" pg JOIN "instituicao" i ON pg.id_instituicao = i.id WHERE pg.id_pesquisador = $1', [id]);
     pesquisador.pos_graduacoes = posGrad.rows;
 
@@ -415,16 +420,19 @@ router.get('/:id', optionalAuthMiddleware, async (req, res) => {
     pesquisador.areas_pesquisa = areas.rows;
 
     const vinculos = await pool.query('SELECT v.tipo, v.nome_programa, i.nome AS instituicao_nome FROM "vinculo" v JOIN "instituicao" i ON v.instituicao = i.id WHERE v.id_pesquisador = $1', [id]);
-    pesquisador.vinculos_institucionais = vinculos.rows;
+    pesquisador.vinculos = vinculos.rows;
 
     const grupos = await pool.query('SELECT gp.nome, gp.descricao, gp.link, i.nome AS instituicao_nome FROM "membro_grupo" mg JOIN "grupo_pesquisa" gp ON mg.id_grupo = gp.id_grupo LEFT JOIN "instituicao" i ON gp.instituicao = i.id WHERE mg.id_pesquisador = $1', [id]);
     pesquisador.grupos_pesquisa = grupos.rows;
 
     const soc = await pool.query('SELECT nome FROM "org_sociedades" WHERE id_pesquisador = $1', [id]);
-    pesquisador.sociedades = soc.rows;
+    pesquisador.org_sociedades = soc.rows;
 
     const disc = await pool.query('SELECT descricao FROM "disciplinas" WHERE id_pesquisador = $1', [id]);
-    pesquisador.disciplinas_lecionadas = disc.rows;
+    pesquisador.disciplinas = disc.rows;
+
+    const revistas = await pool.query('SELECT titulo FROM "revistas_editadas" WHERE id_pesquisador = $1', [id]);
+    pesquisador.revistas_editadas = revistas.rows;
 
     const servicosResult = await pool.query(
       `SELECT s.nome, s.descricao, s.area, s.tipo, l.nome_cidade as cidade, l.nome_estado as estado
@@ -472,7 +480,7 @@ router.put('/:id', registrationOrAuthMiddleware, async (req, res) => {
 
     const {
       nome, email, celular, link_lattes, pagina_institucional, laboratorio,
-      localidade, pq, sbfte, editor_revista,
+      localidade, pq, sbfte, editor_revista, revistas_editadas,
       pos_graduacoes, publicacoes, redes_sociais, areas_pesquisa, vinculos,
       grupos_pesquisa, org_sociedades, disciplinas, servicos, equipamentos
     } = req.body;
@@ -501,8 +509,8 @@ router.put('/:id', registrationOrAuthMiddleware, async (req, res) => {
       pq, sbfte, editor_revista, localidade_id, id
     ]);
 
-    await client.query('DELETE FROM "pos_graduacao" WHERE id_pesquisador = $1', [id]);
-    if (pos_graduacoes && pos_graduacoes.length > 0) {
+    if (pos_graduacoes !== undefined) {
+      await client.query('DELETE FROM "pos_graduacao" WHERE id_pesquisador = $1', [id]);
       for (const pos of pos_graduacoes) {
         if (pos.titulo && pos.instituicao_nome) {
           const instId = await findOrCreateInstituicao(client, pos.instituicao_nome);
@@ -511,49 +519,56 @@ router.put('/:id', registrationOrAuthMiddleware, async (req, res) => {
       }
     }
 
-    await client.query('DELETE FROM "publicacao" WHERE id_pesquisador = $1', [id]);
-    if (publicacoes) {
+    if (revistas_editadas !== undefined) {
+      await client.query('DELETE FROM "revistas_editadas" WHERE id_pesquisador = $1', [id]);
+      for (const revista of revistas_editadas) {
+        if (revista.titulo) await client.query('INSERT INTO "revistas_editadas" (id_pesquisador, titulo) VALUES ($1, $2)', [id, revista.titulo]);
+      }
+    }
+
+    if (publicacoes !== undefined) {
+      await client.query('DELETE FROM "publicacao" WHERE id_pesquisador = $1', [id]);
       for (const pub of publicacoes) await client.query('INSERT INTO "publicacao" (id_pesquisador, doi, titulo) VALUES ($1, $2, $3)', [id, pub.doi, pub.titulo]);
     }
 
-    await client.query('DELETE FROM "rede_social" WHERE id_pesquisador = $1', [id]);
-    if (redes_sociais) {
+    if (redes_sociais !== undefined) {
+      await client.query('DELETE FROM "rede_social" WHERE id_pesquisador = $1', [id]);
       for (const rede of redes_sociais) await client.query('INSERT INTO "rede_social" (id_pesquisador, plataforma, url) VALUES ($1, $2, $3)', [id, rede.plataforma, rede.url]);
     }
 
-    await client.query('DELETE FROM "area_de_pesquisa" WHERE id_pesquisador = $1', [id]);
-    if (areas_pesquisa) {
+    if (areas_pesquisa !== undefined) {
+      await client.query('DELETE FROM "area_de_pesquisa" WHERE id_pesquisador = $1', [id]);
       for (const area of areas_pesquisa) await client.query('INSERT INTO "area_de_pesquisa" (id_pesquisador, descricao) VALUES ($1, $2)', [id, area.descricao]);
     }
 
-    await client.query('DELETE FROM "vinculo" WHERE id_pesquisador = $1', [id]);
-    if (vinculos) {
+    if (vinculos !== undefined) {
+      await client.query('DELETE FROM "vinculo" WHERE id_pesquisador = $1', [id]);
       for (const v of vinculos) {
         const instId = await findOrCreateInstituicao(client, v.instituicao_nome);
         await client.query('INSERT INTO "vinculo" (id_pesquisador, instituicao, tipo, nome_programa) VALUES ($1, $2, $3, $4)', [id, instId, v.tipo, v.nome_programa]);
       }
     }
 
-    await client.query('DELETE FROM "membro_grupo" WHERE id_pesquisador = $1', [id]);
-    if (grupos_pesquisa) {
+    if (grupos_pesquisa !== undefined) {
+      await client.query('DELETE FROM "membro_grupo" WHERE id_pesquisador = $1', [id]);
       for (const g of grupos_pesquisa) {
         const grpId = await findOrCreateGrupoPesquisa(client, { nome: g.nome, descricao: g.descricao, instituicao_nome: g.instituicao_nome, link: g.link });
         await client.query('INSERT INTO "membro_grupo" (id_pesquisador, id_grupo) VALUES ($1, $2)', [id, grpId]);
       }
     }
 
-    await client.query('DELETE FROM "org_sociedades" WHERE id_pesquisador = $1', [id]);
-    if (org_sociedades) {
+    if (org_sociedades !== undefined) {
+      await client.query('DELETE FROM "org_sociedades" WHERE id_pesquisador = $1', [id]);
       for (const org of org_sociedades) await client.query('INSERT INTO "org_sociedades" (id_pesquisador, nome) VALUES ($1, $2)', [id, org.nome]);
     }
 
-    await client.query('DELETE FROM "disciplinas" WHERE id_pesquisador = $1', [id]);
-    if (disciplinas) {
+    if (disciplinas !== undefined) {
+      await client.query('DELETE FROM "disciplinas" WHERE id_pesquisador = $1', [id]);
       for (const disc of disciplinas) await client.query('INSERT INTO "disciplinas" (id_pesquisador, descricao) VALUES ($1, $2)', [id, disc.descricao || disc.nome]);
     }
 
-    await client.query('DELETE FROM "servico" WHERE id_pesquisador = $1', [id]);
-    if (servicos) {
+    if (servicos !== undefined) {
+      await client.query('DELETE FROM "servico" WHERE id_pesquisador = $1', [id]);
       for (const s of servicos) {
         if (s.nome && s.cidade && s.estado) {
           const locId = await findOrCreateLocalidade(client, { nome_cidade: s.cidade, nome_estado: s.estado });
@@ -562,8 +577,8 @@ router.put('/:id', registrationOrAuthMiddleware, async (req, res) => {
       }
     }
 
-    await client.query('DELETE FROM "equipamento" WHERE id_pesquisador = $1', [id]);
-    if (equipamentos) {
+    if (equipamentos !== undefined) {
+      await client.query('DELETE FROM "equipamento" WHERE id_pesquisador = $1', [id]);
       for (const e of equipamentos) {
         if (e.nome && e.cidade && e.estado) {
           const locId = await findOrCreateLocalidade(client, { nome_cidade: e.cidade, nome_estado: e.estado });
@@ -573,12 +588,12 @@ router.put('/:id', registrationOrAuthMiddleware, async (req, res) => {
     }
 
     await client.query('COMMIT');
-    res.json({ message: 'Profile updated' });
+    res.json({ message: 'Perfil atualizado com sucesso!' });
 
   } catch (err) {
     await client.query('ROLLBACK');
     console.error('Update error:', err);
-    res.status(500).json({ error: 'Update failed' });
+    res.status(500).json({ error: 'Falha ao atualizar o perfil.' });
   } finally {
     client.release();
   }
@@ -587,11 +602,17 @@ router.put('/:id', registrationOrAuthMiddleware, async (req, res) => {
 router.use(authMiddleware);
 
 router.post('/:id/contribuicao', async (req, res) => {
+  if (!req.user.isAdmin) return res.status(403).json({ error: 'Acesso negado.' });
+
   const { id } = req.params;
   const { valor, metodo, data_pagamento } = req.body;
 
   if (!valor || !metodo) {
     return res.status(400).json({ error: 'Dados de contribuicao incompletos. Valor e metodo são obrigatórios.' });
+  }
+
+  if (isNaN(valor) || Number(valor) <= 0 || isNaN(new Date(data_pagamento))) {
+    return res.status(400).json({ error: 'Valor ou data de pagamento inválidos.' });
   }
 
   const client = await pool.connect();
