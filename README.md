@@ -56,15 +56,23 @@ Interprete o campo ip das respostas:
 ## Exemplo (errado com 2 hops, certo com apenas 1): 
 
 #### Errado:
-
+```
 curl -s https://conectafarmaco.lgrz.xyz/api/health
+```
 {"status":"ok","ip":"191.5.105.156","xff":"191.5.105.156","socket":"::ffff:172.29.0.1"}% 
+
+```
 curl -s -H 'X-Forwarded-For: 9.9.9.9' https://conectafarmaco.lgrz.xyz/api/health
+```
 {"status":"ok","ip":"9.9.9.9","xff":"9.9.9.9, 191.5.105.156","socket":"::ffff:172.29.0.1"}%  
 
 #### Certo:
+```
 curl -s https://conectafarmaco.lgrz.xyz/api/health
+```
 {"status":"ok","ip":"191.5.105.156","xff":"191.5.105.156","socket":"::ffff:172.29.0.1"}%
 
+```
 curl -s -H 'X-Forwarded-For: 9.9.9.9' https://conectafarmaco.lgrz.xyz/api/health
+```
 {"status":"ok","ip":"191.5.105.156","xff":"9.9.9.9, 191.5.105.156","socket":"::ffff:172.29.0.1"}
