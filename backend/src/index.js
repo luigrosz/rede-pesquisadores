@@ -34,7 +34,12 @@ const authLimiter = rateLimit({
 
 app.use('/auth', authLimiter);
 
-app.get('/health', (req, res) => res.json({ status: 'ok' }));
+app.get('/health', (req, res) => res.json({
+  status: 'ok',
+  ip: req.ip,
+  xff: req.headers['x-forwarded-for'],
+  socket: req.socket.remoteAddress,
+}));
 
 app.use('/pesquisador', pesquisador);
 app.use('/auth', auth);

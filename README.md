@@ -32,19 +32,7 @@ docker compose up -d
 
 O valor do proxy hop deve ser, ao menos, 1, ja que ele sempre ficaria atras de ao menos 1 proxy (nginx) 
 
-Como conferir se o valor está certo
-
-Temporariamente, faça o endpoint /health dev
-olver o que o backend enxerga:
-
-```js
-app.get('/health', (req, res) => res.json({
-  status: 'ok',
-  ip: req.ip,
-  xff: req.headers['x-forwarded-for'],
-  socket: req.socket.remoteAddress,
-}));
-```
+## Como conferir se o valor está certo
 
 Depois rode os dois comandos abaixo, trocand
 o o endereço pelo do deploy:
