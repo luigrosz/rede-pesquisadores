@@ -626,7 +626,10 @@ router.post('/:id/contribuicao', async (req, res) => {
     let currentEnabledUntil = currentPesquisador.enabled_until ? new Date(currentPesquisador.enabled_until) : null;
     const mensalidadeResult = await client.query(`SELECT valor FROM configuracao WHERE chave = 'mensalidade'`);
     const mensalidade = Number(mensalidadeResult.rows[0].valor);
-    const monthsToEnable = Math.floor(valor / mensalidade);
+    const totalResult = await client.query('SELECT COALESCE(SUM(valor), 0) AS total FROM "contribuicao" WHERE id_pesquisador = $1;', [id]);
+    const totalPago = Number(totalResult.rows[0].total);
+    const valorPago = Number(contribuicaoResult.rows[0].valor);
+    const monthsToEnable = Math.max(0, Math.floor(totalPago / mensalidade) - Math.floor((totalPago - valorPago) / mensalidade));
     let newEnabledUntil;
     const today = new Date();
     today.setHours(0, 0, 0, 0);

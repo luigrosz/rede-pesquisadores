@@ -284,8 +284,8 @@ function AdminPage() {
                                 value={newContribution.valor}
                                 onChange={handleContributionChange}
                                 required
-                                min="0"
-                                step="0.01"
+                                min="1"
+                                step="1"
                               />
                             </div>
 
