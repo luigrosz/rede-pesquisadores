@@ -34,11 +34,13 @@ O valor do proxy hop deve ser, ao menos, 1, ja que ele sempre ficaria atras de a
 
 ## Como conferir se o valor está certo
 
-Depois rode os dois comandos abaixo, trocand
-o o endereço pelo do deploy:
+Depois rode os dois comandos abaixo, trocando o endereço pelo do deploy:
 
 ```
 curl -s https://SEU-DOMINIO/api/health
+```
+
+```
 curl -s -H 'X-Forwarded-For: 9.9.9.9' https:
 //SEU-DOMINIO/api/health
 ```
