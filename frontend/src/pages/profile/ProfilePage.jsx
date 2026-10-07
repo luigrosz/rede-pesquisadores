@@ -275,7 +275,7 @@ function ProfilePage() {
 
   return (
     <div className="profile-page-container">
-      <div className="profile-navigation-actions">
+      <div className="page-nav-actions">
         {canEdit && (
           <button
             type="button"

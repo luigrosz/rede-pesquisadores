@@ -90,3 +90,66 @@ button:focus-visible {
 .login-button-fixed:hover {
   background-color: #218838;
 }
+
+.page-nav-actions {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 100;
+}
+
+.page-nav-actions .back-to-search-button,
+.page-nav-actions .logout-button-fixed,
+.page-nav-actions .login-button-fixed,
+.page-nav-actions .edit-mode-button {
+  position: static;
+  top: auto;
+  right: auto;
+  z-index: auto;
+  padding: 8px 18px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.page-nav-actions .back-to-search-button {
+  color: #0056b3;
+  background-color: #e7f1ff;
+}
+
+.page-nav-actions .logout-button-fixed {
+  background-color: #dc3545;
+  color: white;
+}
+
+.page-nav-actions .login-button-fixed {
+  background-color: #0056b3;
+  color: white;
+}
+
+.page-nav-actions .back-to-search-button:hover,
+.page-nav-actions .logout-button-fixed:hover,
+.page-nav-actions .login-button-fixed:hover {
+  opacity: 0.85;
+}
+
+@media (max-width: 520px) {
+  .page-nav-actions {
+    left: 16px;
+    right: 16px;
+    justify-content: flex-end;
+  }
+
+  .page-nav-actions .back-to-search-button,
+  .page-nav-actions .logout-button-fixed,
+  .page-nav-actions .login-button-fixed {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+  }
+}

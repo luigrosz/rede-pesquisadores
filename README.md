@@ -23,3 +23,40 @@ espere um pouco para o db iniciar
 cat ./backups/your-backup-file.sql.gz | gunzip | docker compose exec -T projeto-farmacia-db psql -U postgres -d ${POSTGRES_DB}
 
 docker compose up -d
+
+# PROXY HOPS
+
+./backend/.env
+
+O valor do proxy hop deve ser, ao menos, 1, ja que ele sempre ficaria atras de ao menos 1 proxy (nginx) 
+
+Como conferir se o valor está certo
+
+Temporariamente, faça o endpoint /health dev
+olver o que o backend enxerga:
+
+```js
+app.get('/health', (req, res) => res.json({
+  status: 'ok',
+  ip: req.ip,
+  xff: req.headers['x-forwarded-for'],
+  socket: req.socket.remoteAddress,
+}));
+```
+
+Depois rode os dois comandos abaixo, trocand
+o o endereço pelo do deploy:
+
+```
+curl -s https://SEU-DOMINIO/api/health
+curl -s -H 'X-Forwarded-For: 9.9.9.9' https:
+//SEU-DOMINIO/api/health
+```
+
+Interprete o campo ip das respostas:
+
+| ip na requisição normal | ip na requisição com X-Forwarded-For forjado | conclusão |
+
+| IP público do cliente | IP público do cliente | correto, o valor de TRUST_PROXY_HOPS está certo |
+| IP do host ou da rede docker (10.x, 172.x) | o mesmo IP | valor baixo demais, aumente
+| IP público do cliente | 9.9.9.9 | valor alto demais, o cabeçalho está sendo falsificável, diminua |

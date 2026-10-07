@@ -49,37 +49,3 @@
   margin-right: 5px;
 }
 
-.admin-nav-actions {
-  position: fixed;
-  top: 16px;
-  right: 16px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  z-index: 1000;
-}
-
-.admin-nav-actions button {
-  position: static;
-  padding: 8px 18px;
-  border: none;
-  border-radius: 6px;
-  font-weight: 600;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: opacity 0.2s;
-}
-
-.btn-voltar-admin {
-  color: #0056b3;
-  background-color: #e7f1ff;
-}
-
-.admin-nav-actions .logout-button-fixed {
-  background-color: #dc3545;
-  color: white;
-}
-
-.admin-nav-actions button:hover {
-  opacity: 0.85;
-}

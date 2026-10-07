@@ -12,6 +12,8 @@ import './jobs/subscriptionReminder.js';
 const app = express();
 const port = 3000;
 
+app.set('trust proxy', Number(process.env.TRUST_PROXY_HOPS) || 1);
+
 app.use(helmet());
 
 app.use(cors({

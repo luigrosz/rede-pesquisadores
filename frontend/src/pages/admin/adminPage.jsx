@@ -201,8 +201,8 @@ function AdminPage() {
         </div>
       )}
 
-      <div className="admin-nav-actions">
-        <button onClick={() => navigate('/main')} className="btn-voltar-admin">
+      <div className="page-nav-actions">
+        <button onClick={() => navigate('/main')} className="back-to-search-button">
           Voltar à busca
         </button>
         <button onClick={handleLogout} className="logout-button-fixed">
